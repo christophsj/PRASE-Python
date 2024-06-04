@@ -105,16 +105,14 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, embed_dir, ground_truth_
 
     # embedding feedback
     if load_emb is True and alignment_state.embeddings:
-        mapping_l = alignment_state.embeddings[kgs.kg_l]
-        mapping_r = alignment_state.embeddings[kgs.kg_r]
-        kgs.util.load_embedding(mapping_l, mapping_r)
+        kgs.util.load_embedding(alignment_state.embeddings)
 
     # set the function balancing the probability (from PARIS) and the embedding similarity
     kgs.set_fusion_func(prase_func)
     kgs.run(test_path=ground_truth_path)
 
 
-def get_embedding_module():
+def get_embedding_module(embed_output_path: str):
     embedding_module = PrecomputedEmbeddingModule(
         alignments_path=os.path.join(embed_output_path, "alignment_results_12"),
         embeddings_path=os.path.join(embed_output_path, "ent_embeds.npy"),
@@ -127,7 +125,7 @@ def get_embedding_module():
     return embedding_module
 
 
-if __name__ == '__main__':
+def main():
     base, _ = os.path.split(os.path.abspath(__file__))
     dataset_name = "D_W_15K_V2"
     dataset_path = os.path.join(os.path.join(base, "data"), dataset_name)
@@ -140,7 +138,7 @@ if __name__ == '__main__':
     kgs = construct_kgs(dataset_dir=dataset_path, name=dataset_name, load_chk=None)
 
     # set the number of processes
-    kgs.set_worker_num(6)
+    kgs.set_worker_num(1)
 
     # set the iteration number of PARIS
     kgs.set_iteration(10)
@@ -160,7 +158,7 @@ if __name__ == '__main__':
     # embed_module_name = "MultiKE"
     embed_module_name = "BootEA"
     embed_output_path = os.path.join(dataset_path, embed_module_name)
-    module = get_embedding_module()
+    module = get_embedding_module(embed_output_path)
     run_prase_iteration(kgs, module, embed_dir=embed_output_path, prase_func=fusion_func,
                         ground_truth_path=ground_truth_mapping_path)
 
@@ -189,3 +187,7 @@ if __name__ == '__main__':
     input_dir_name = "PRASE-" + embed_module_name + "@" + time_stamp
     input_dir = os.path.join(input_base, input_dir_name)
     kgs.util.generate_input_for_embed_align(link_path=ground_truth_mapping_path, save_dir=input_dir, threshold=0.1)
+
+
+if __name__ == '__main__':
+    main()
