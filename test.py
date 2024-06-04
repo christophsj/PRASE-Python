@@ -115,13 +115,13 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, embed_dir, ground_truth_
 
 
 def get_embedding_module():
-    # embedding_module = PrecomputedEmbeddingModule(
-    #     alignments_path=os.path.join(embed_output_path, "alignment_results_12"),
-    #     embeddings_path=os.path.join(embed_output_path, "ent_embeds.npy"),
-    #     mapping_l_path=os.path.join(embed_output_path, "kg1_ent_ids"),
-    #     mapping_r_path=os.path.join(embed_output_path, "kg2_ent_ids")
-    # )
-    embedding_module = DummyModule()
+    embedding_module = PrecomputedEmbeddingModule(
+        alignments_path=os.path.join(embed_output_path, "alignment_results_12"),
+        embeddings_path=os.path.join(embed_output_path, "ent_embeds.npy"),
+        mapping_l_path=os.path.join(embed_output_path, "kg1_ent_ids"),
+        mapping_r_path=os.path.join(embed_output_path, "kg2_ent_ids")
+    )
+    # embedding_module = DummyModule()
 
     logger.info(f"Using {embedding_module.__class__.__name__} as the embedding module")
     return embedding_module
