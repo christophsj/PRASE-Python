@@ -159,6 +159,7 @@ class KGs:
         for task in tasks:
             task.join()
 
+        current_time = time.time()
         self.__clear_ent_match_and_prob(ent_match, ent_prob)
         while not ent_match_tuple_queue.empty():
             ent_match_tuple = ent_match_tuple_queue.get()
@@ -510,11 +511,9 @@ class KGsUtil:
 
         return obj_l, obj_r, prob
 
-    def load_ent_links(self, links=None, path=None, func=None, num=None, init_value=None, threshold_min=0.0, threshold_max=1.0,
+    def load_ent_links(self, links=None, func=None, num=None, init_value=None, threshold_min=0.0,
+                       threshold_max=1.0,
                        force=False):
-        if path:
-            links = self.__load_ent_links_from_file(path)
-
         if links is None:
             raise Exception("No links to load")
 
@@ -558,12 +557,12 @@ class KGsUtil:
                 mapping[ent_name] = idx
         return mapping
 
+    def load_embedding(self, embedding: dict[KG, dict[str, np.ndarray]]):
+        for kg, emb in embedding.items():
+            self.__load_emb_helper(kg, emb)
 
-    def load_embedding(self, kg_l_mapping: dict[str, np.ndarray], kg_r_mapping: dict[str, np.ndarray]):
-        self.__load_emb_helper(self.kgs.kg_l, kg_l_mapping)
-        self.__load_emb_helper(self.kgs.kg_r, kg_r_mapping)
-        self.kgs.kg_l.init_ent_embeddings()
-        self.kgs.kg_r.init_ent_embeddings()
+        for kg in embedding.keys():
+            kg.init_ent_embeddings()
 
     @staticmethod
     def __result_writer(path, result_dict, title):

@@ -31,12 +31,12 @@ entity_embeddings: TypeAlias = dict[KG, dict[entity_id, np.ndarray]]
 
 @dataclass
 class AlignmentState:
-        alignments: entity_alignments
-        embeddings: entity_embeddings | None = None
-        
-        
+    alignments: entity_alignments
+    embeddings: entity_embeddings | None = None
+
+
 class Module:
-            
+
     def step(self, kg_l, kg_r, state: AlignmentState) -> AlignmentState:
         """Run the module."""
         pass
