@@ -3,6 +3,8 @@ import sys
 import os
 import time
 import random
+from typing import Iterable
+
 import numpy as np
 from objects.KG import KG
 from model.PARIS import one_iteration_one_way
@@ -478,31 +480,47 @@ class KGsUtil:
                         self.__params_loader_helper(self.kgs.rel_align_dict_r, obj_l.id, obj_r.id, prob)
         return
 
-    def load_ent_links(self, path, func=None, num=None, init_value=None, threshold_min=0.0, threshold_max=1.0,
-                       force=False):
-        ent_link_list = list()
+    @staticmethod
+    def load_ent_links_from_file(path: str) -> Iterable[tuple[str, str, float]]:
         with open(path, "r", encoding="utf8") as f:
             for line in f.readlines():
                 line = line.strip()
                 if len(line) == 0:
                     continue
                 params = line.split(sep="\t")
-                name_l, name_r = params[0].strip(), params[1].strip()
-                obj_l, obj_r = self.kgs.kg_l.get_object_by_name(name_l), self.kgs.kg_r.get_object_by_name(name_r)
-                if obj_l is None or obj_r is None:
-                    continue
-                if init_value is None:
-                    if len(params) == 3:
-                        prob = float(params[2].strip())
-                    else:
-                        prob = 1.0
-                else:
-                    prob = init_value
-                if prob < threshold_min or prob > threshold_max:
-                    continue
-                if func is not None:
-                    prob = func(prob)
-                ent_link_list.append((obj_l, obj_r, prob))
+                name_l, name_r, prob = params[0].strip(), params[1].strip(), float(params[2].strip())
+                yield name_l, name_r, prob
+
+    def __transform_ent_links(self, triple: tuple[str, str, float], init_value, threshold_min, threshold_max, func):
+        name_l, name_r, prob = triple
+
+        obj_l, obj_r = self.kgs.kg_l.get_object_by_name(name_l), self.kgs.kg_r.get_object_by_name(name_r)
+        if obj_l is None or obj_r is None:
+            return None
+        if init_value is None:
+            prob = prob
+        else:
+            prob = init_value
+        if prob < threshold_min or prob > threshold_max:
+            return None
+        if func is not None:
+            prob = func(prob)
+
+        return obj_l, obj_r, prob
+
+    def load_ent_links(self, links=None, path=None, func=None, num=None, init_value=None, threshold_min=0.0, threshold_max=1.0,
+                       force=False):
+        if path:
+            links = self.__load_ent_links_from_file(path)
+
+        if links is None:
+            raise Exception("No links to load")
+
+        ent_link_list = list(
+            map(lambda x: self.__transform_ent_links(x, init_value, threshold_min, threshold_max, func),
+                links)
+        )
+
         random_list = random.choices(ent_link_list, k=num) if num is not None else ent_link_list
         change_num = 0
         for (obj_l, obj_r, prob) in random_list:
@@ -519,22 +537,29 @@ class KGsUtil:
             idx = ent.id
             self.kgs.sup_ent_prob[idx] = func(self.kgs.sup_ent_prob[idx])
 
-    def load_embedding(self, ent_emb_path, kg_l_mapping, kg_r_mapping):
-        ent_emb = np.load(ent_emb_path)
+    @staticmethod
+    def __load_emb_helper(kg: KG, mapping: dict[str, np.ndarray]):
+        for (ent_name, emb) in mapping.items():
+            ent = kg.entity_dict_by_name.get(ent_name)
+            if ent is not None:
+                ent.embedding = emb
 
-        def load_emb_helper(kg, mapping_path):
-            with open(mapping_path, "r", encoding="utf8") as f:
-                for line in f.readlines():
-                    if len(line.strip()) == 0:
-                        continue
-                    params = line.strip().split("\t")
-                    ent_name, idx = params[0].strip(), int(params[1].strip())
-                    ent = kg.entity_dict_by_name.get(ent_name)
-                    if ent is not None:
-                        ent.embedding = ent_emb[idx, :]
+    @staticmethod
+    def mapping_from_file(mapping_path) -> dict[str, int]:
+        mapping = dict()
+        with open(mapping_path, "r", encoding="utf8") as f:
+            for line in f.readlines():
+                if len(line.strip()) == 0:
+                    continue
+                params = line.strip().split("\t")
+                ent_name, idx = params[0].strip(), int(params[1].strip())
+                mapping[ent_name] = idx
+        return mapping
 
-        load_emb_helper(self.kgs.kg_l, kg_l_mapping)
-        load_emb_helper(self.kgs.kg_r, kg_r_mapping)
+
+    def load_embedding(self, kg_l_mapping: dict[str, np.ndarray], kg_r_mapping: dict[str, np.ndarray]):
+        self.__load_emb_helper(self.kgs.kg_l, kg_l_mapping)
+        self.__load_emb_helper(self.kgs.kg_r, kg_r_mapping)
         self.kgs.kg_l.init_ent_embeddings()
         self.kgs.kg_r.init_ent_embeddings()
 
