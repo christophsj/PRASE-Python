@@ -12,6 +12,8 @@ import multiprocessing as mp
 
 sys.setrecursionlimit(1000000)
 
+random.seed(123)
+
 
 class KGs:
     def __init__(self, kg1: KG, kg2: KG, theta=0.1, iteration=3, workers=4, fusion_func=None):
