@@ -1,10 +1,17 @@
 import os
 import time
+import logging
 
 import numpy as np
 
+from module.dummy_module import DummyModule
+from module.module import AlignmentState, Module
+from module.precomputed_embedding_module import PrecomputedEmbeddingModule
 from objects.KG import KG
 from objects.KGs import KGs
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def construct_kg(path_r, path_a=None, sep='\t', name=None):
@@ -80,38 +87,50 @@ def run_init_iteration(kgs, ground_truth_path=None):
     kgs.run(test_path=ground_truth_path)
 
 
-def run_prase_iteration(kgs, embed_dir, ground_truth_path=None, load_weight=1.0, reset_weight=1.0, load_ent=True,
+def run_prase_iteration(kgs: KGs, embed_module: Module, embed_dir, ground_truth_path=None, load_weight=1.0,
+                        reset_weight=1.0, load_ent=True,
                         load_emb=True,
                         init_reset=False, prase_func=None):
     if init_reset is True:
         # load_weight: scale the mapping probability predicted by the PARIS module if loading PRASE from check point
         kgs.util.reset_ent_align_prob(lambda x: reset_weight * x)
 
+    alignment_state = embed_module.step(kgs.kg_l, kgs.kg_r, AlignmentState(kgs.util.ent_links_candidate))
+
     # mapping feedback
     if load_ent is True:
-        ent_links_path = os.path.join(embed_dir, "alignment_results_12")
+        # ent_links_path = os.path.join(embed_dir, "alignment_results_12")
         # load_weight: scale the mapping probability predicted by the embedding module
-        kgs.util.load_ent_links(func=lambda x: load_weight * x, path=ent_links_path, force=True)
+        kgs.util.load_ent_links(func=lambda x: load_weight * x, links=alignment_state.alignments, force=True)
 
     # embedding feedback
-    if load_emb is True:
-        mapping_l, mapping_r = os.path.join(embed_dir, "kg1_ent_ids"), os.path.join(embed_dir, "kg2_ent_ids")
-        ent_emb_path = os.path.join(embed_dir, "ent_embeds.npy")
-        kgs.util.load_embedding(ent_emb_path, mapping_l, mapping_r)
+    if load_emb is True and alignment_state.embeddings:
+        mapping_l = alignment_state.embeddings[kgs.kg_l]
+        mapping_r = alignment_state.embeddings[kgs.kg_r]
+        kgs.util.load_embedding(mapping_l, mapping_r)
 
     # set the function balancing the probability (from PARIS) and the embedding similarity
     kgs.set_fusion_func(prase_func)
     kgs.run(test_path=ground_truth_path)
 
 
+def get_embedding_module():
+    # embedding_module = PrecomputedEmbeddingModule(
+    #     alignments_path=os.path.join(embed_output_path, "alignment_results_12"),
+    #     embeddings_path=os.path.join(embed_output_path, "ent_embeds.npy"),
+    #     mapping_l_path=os.path.join(embed_output_path, "kg1_ent_ids"),
+    #     mapping_r_path=os.path.join(embed_output_path, "kg2_ent_ids")
+    # )
+    embedding_module = DummyModule()
+
+    logger.info(f"Using {embedding_module.__class__.__name__} as the embedding module")
+    return embedding_module
+
+
 if __name__ == '__main__':
     base, _ = os.path.split(os.path.abspath(__file__))
     dataset_name = "D_W_15K_V2"
-    # embed_module_name = "MultiKE"
-    embed_module_name = "BootEA"
-
     dataset_path = os.path.join(os.path.join(base, "data"), dataset_name)
-    embed_output_path = os.path.join(dataset_path, embed_module_name)
 
     print("Construct KGs...")
     # load the KG files from relation and attribute triples to construct the KGs object
@@ -137,7 +156,12 @@ if __name__ == '__main__':
     # run_init_iteration(kgs=kgs, ground_truth_path=ground_truth_mapping_path)
 
     # run PRASE using both the embedding and mapping feedback
-    run_prase_iteration(kgs, embed_dir=embed_output_path, prase_func=fusion_func,
+
+    # embed_module_name = "MultiKE"
+    embed_module_name = "BootEA"
+    embed_output_path = os.path.join(dataset_path, embed_module_name)
+    module = get_embedding_module()
+    run_prase_iteration(kgs, module, embed_dir=embed_output_path, prase_func=fusion_func,
                         ground_truth_path=ground_truth_mapping_path)
 
     # in the following, we store the mappings and check point files
