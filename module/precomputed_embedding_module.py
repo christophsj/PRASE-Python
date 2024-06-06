@@ -3,7 +3,7 @@ from typing import override
 
 import numpy as np
 
-from module.module import AlignmentState, Module, entity_alignments
+from module.module import AlignmentState, Module, entity_alignment
 from objects.KG import KG
 from objects.KGs import KGs, KGsUtil
 
@@ -17,7 +17,7 @@ class PrecomputedEmbeddingModule(Module):
         self.mapping_r_path = mapping_r_path
 
     @staticmethod
-    def __alignments_from_file(kg1, kg2, path: str) -> entity_alignments:
+    def __alignments_from_file(kg1, kg2, path: str) -> entity_alignment:
         kgs = KGs(kg1=kg1, kg2=kg2)
         return list(kgs.util.load_ent_links_from_file(path))
 
@@ -34,4 +34,4 @@ class PrecomputedEmbeddingModule(Module):
             kg2: {name: embeddings[idx] for (name, idx) in name_to_idx_r.items()},
         }
         
-        return AlignmentState(alignments, embeddings)
+        return AlignmentState(entity_alignments=alignments, entity_embeddings=embeddings)
