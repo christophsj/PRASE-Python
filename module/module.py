@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TypeAlias
 import numpy as np
 
@@ -34,8 +34,8 @@ relation_embedding: TypeAlias = dict[KG, dict[relation_id, np.ndarray]]
 
 @dataclass
 class AlignmentState:
-    entity_alignments: entity_alignment = []
-    relation_alignments: entity_alignment = []
+    entity_alignments: entity_alignment = field(default_factory=lambda: [])
+    relation_alignments: entity_alignment = field(default_factory=lambda: [])
     
     entity_embeddings: entity_embedding | None = None
     relation_embeddings: relation_embedding | None = None
