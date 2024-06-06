@@ -3,7 +3,7 @@ from typing import override
 
 import numpy as np
 
-from module.module import AlignmentState, Module, entity_alignments
+from module.module import AlignmentState, Module, entity_alignment
 from objects.KG import KG
 from objects.KGs import KGs, KGsUtil
 

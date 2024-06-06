@@ -95,17 +95,17 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, embed_dir, ground_truth_
         # load_weight: scale the mapping probability predicted by the PARIS module if loading PRASE from check point
         kgs.util.reset_ent_align_prob(lambda x: reset_weight * x)
 
-    alignment_state = embed_module.step(kgs.kg_l, kgs.kg_r, AlignmentState(kgs.util.ent_links_candidate))
+    alignment_state = embed_module.step(kgs.kg_l, kgs.kg_r, AlignmentState(entity_alignments=kgs.util.ent_links_candidate))
 
     # mapping feedback
     if load_ent is True:
         # ent_links_path = os.path.join(embed_dir, "alignment_results_12")
         # load_weight: scale the mapping probability predicted by the embedding module
-        kgs.util.load_ent_links(func=lambda x: load_weight * x, links=alignment_state.alignments, force=True)
+        kgs.util.load_ent_links(func=lambda x: load_weight * x, links=alignment_state.entity_alignments, force=True)
 
     # embedding feedback
-    if load_emb is True and alignment_state.embeddings:
-        kgs.util.load_embedding(alignment_state.embeddings)
+    if load_emb is True and alignment_state.entity_embeddings:
+        kgs.util.load_embedding(alignment_state.entity_embeddings)
 
     # set the function balancing the probability (from PARIS) and the embedding similarity
     kgs.set_fusion_func(prase_func)

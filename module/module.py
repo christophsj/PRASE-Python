@@ -5,9 +5,12 @@ import numpy as np
 from objects.KG import KG
 
 entity_id: TypeAlias = str | int
+relation_id: TypeAlias = str
 confidence: TypeAlias = float
-entity_alignments: TypeAlias = list[tuple[entity_id, entity_id, confidence]]
-entity_embeddings: TypeAlias = dict[KG, dict[entity_id, np.ndarray]]
+entity_alignment: TypeAlias = list[tuple[entity_id, entity_id, confidence]]
+relation_alignment: TypeAlias = list[tuple[relation_id, relation_id, confidence]]
+entity_embedding: TypeAlias = dict[KG, dict[entity_id, np.ndarray]]
+relation_embedding: TypeAlias = dict[KG, dict[relation_id, np.ndarray]]
 
 
 # class EmbeddingModule:
@@ -31,8 +34,11 @@ entity_embeddings: TypeAlias = dict[KG, dict[entity_id, np.ndarray]]
 
 @dataclass
 class AlignmentState:
-    alignments: entity_alignments
-    embeddings: entity_embeddings | None = None
+    entity_alignments: entity_alignment = []
+    relation_alignments: entity_alignment = []
+    
+    entity_embeddings: entity_embedding | None = None
+    relation_embeddings: relation_embedding | None = None
 
 
 class Module:
