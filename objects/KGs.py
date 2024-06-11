@@ -7,7 +7,7 @@ from typing import Iterable
 
 import numpy as np
 from objects.KG import KG
-from model.PARIS import one_iteration_one_way
+from model.paris.PARIS import one_iteration_one_way
 import multiprocessing as mp
 
 sys.setrecursionlimit(1000000)

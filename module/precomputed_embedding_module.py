@@ -1,6 +1,3 @@
-import os
-from typing import override
-
 import numpy as np
 
 from module.module import AlignmentState, Module, entity_alignment
@@ -21,7 +18,6 @@ class PrecomputedEmbeddingModule(Module):
         kgs = KGs(kg1=kg1, kg2=kg2)
         return list(kgs.util.load_ent_links_from_file(path))
 
-    @override
     def step(self, kg1: KG, kg2: KG, _: AlignmentState) -> AlignmentState:
         alignments = self.__alignments_from_file(kg1, kg2, self.alignments_path)
         embeddings = np.load(self.embeddings_path)

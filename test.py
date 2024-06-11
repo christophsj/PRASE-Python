@@ -6,6 +6,7 @@ import numpy as np
 
 from module.dummy_module import DummyModule
 from module.module import AlignmentState, Module
+from module.bert_int_module import BertIntModule
 from module.precomputed_embedding_module import PrecomputedEmbeddingModule
 from objects.KG import KG
 from objects.KGs import KGs
@@ -87,7 +88,7 @@ def run_init_iteration(kgs, ground_truth_path=None):
     kgs.run(test_path=ground_truth_path)
 
 
-def run_prase_iteration(kgs: KGs, embed_module: Module, embed_dir, ground_truth_path=None, load_weight=1.0,
+def run_prase_iteration(kgs: KGs, embed_module: Module, ground_truth_path=None, load_weight=1.0,
                         reset_weight=1.0, load_ent=True,
                         load_emb=True,
                         init_reset=False, prase_func=None):
@@ -112,13 +113,14 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, embed_dir, ground_truth_
     kgs.run(test_path=ground_truth_path)
 
 
-def get_embedding_module(embed_output_path: str):
-    embedding_module = PrecomputedEmbeddingModule(
-        alignments_path=os.path.join(embed_output_path, "alignment_results_12"),
-        embeddings_path=os.path.join(embed_output_path, "ent_embeds.npy"),
-        mapping_l_path=os.path.join(embed_output_path, "kg1_ent_ids"),
-        mapping_r_path=os.path.join(embed_output_path, "kg2_ent_ids")
-    )
+def get_embedding_module():
+    # embedding_module = PrecomputedEmbeddingModule(
+    #     alignments_path=os.path.join(embed_output_path, "alignment_results_12"),
+    #     embeddings_path=os.path.join(embed_output_path, "ent_embeds.npy"),
+    #     mapping_l_path=os.path.join(embed_output_path, "kg1_ent_ids"),
+    #     mapping_r_path=os.path.join(embed_output_path, "kg2_ent_ids")
+    # )
+    embedding_module = BertIntModule(des_dict_path="model/bert_int/data/dbp15k/2016-10-des_dict")
     # embedding_module = DummyModule()
 
     logger.info(f"Using {embedding_module.__class__.__name__} as the embedding module")
@@ -157,9 +159,8 @@ def main():
 
     # embed_module_name = "MultiKE"
     embed_module_name = "BootEA"
-    embed_output_path = os.path.join(dataset_path, embed_module_name)
-    module = get_embedding_module(embed_output_path)
-    run_prase_iteration(kgs, module, embed_dir=embed_output_path, prase_func=fusion_func,
+    module = get_embedding_module()
+    run_prase_iteration(kgs, module, prase_func=fusion_func,
                         ground_truth_path=ground_truth_mapping_path)
 
     # in the following, we store the mappings and check point files
