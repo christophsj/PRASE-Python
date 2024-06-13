@@ -1,7 +1,10 @@
+from torch import optim, nn
+
 from .model_train_test_func import *
 from .Param import *
+import pickle
 
-def main():
+def main(train_ill, test_ill, eid2data, entity_pairs, nei_features, att_features, des_features, train_candidate, test_candidate):
     print("----------------interaction model--------------------")
     cuda_num = CUDA_NUM
     print("GPU num {}".format(cuda_num))
@@ -9,20 +12,20 @@ def main():
 
     # read other data from bert unit model(train ill/test ill/eid2data)
     # (These files were saved during the training of basic bert unit)
-    bert_model_other_data_path = BASIC_BERT_UNIT_MODEL_SAVE_PATH + BASIC_BERT_UNIT_MODEL_SAVE_PREFIX + 'other_data.pkl'
-    train_ill, test_ill, eid2data = pickle.load(open(bert_model_other_data_path, "rb"))
+    # bert_model_other_data_path = BASIC_BERT_UNIT_MODEL_SAVE_PATH + BASIC_BERT_UNIT_MODEL_SAVE_PREFIX + 'other_data.pkl'
+    # train_ill, test_ill, eid2data = pickle.load(open(bert_model_other_data_path, "rb"))
     print("train_ill num: {} /test_ill num:{} / train_ill & test_ill num: {}".format(len(train_ill),len(test_ill), len(set(train_ill) & set(test_ill) )))
 
 
     #(candidate) entity pairs
-    entity_pairs = pickle.load(open(ENT_PAIRS_PATH, "rb"))
+    # entity_pairs = pickle.load(open(ENT_PAIRS_PATH, "rb"))
 
     #interaction features
-    nei_features = pickle.load(open(NEIGHBORVIEW_SIMILARITY_FEATURE_PATH, "rb")) #neighbor-view interaction similarity feature
-    att_features = pickle.load(open(ATTRIBUTEVIEW_SIMILARITY_FEATURE_PATH,'rb')) #attribute-view interaction similarity feature
-    des_features = pickle.load(open(DESVIEW_SIMILARITY_FEATURE_PATH, "rb")) #description/name-view interaction similarity feature
-    train_candidate = pickle.load(open(TRAIN_CANDIDATES_PATH, "rb"))
-    test_candidate = pickle.load(open(TEST_CANDIDATES_PATH, "rb"))
+    # nei_features = pickle.load(open(NEIGHBORVIEW_SIMILARITY_FEATURE_PATH, "rb")) #neighbor-view interaction similarity feature
+    # att_features = pickle.load(open(ATTRIBUTEVIEW_SIMILARITY_FEATURE_PATH,'rb')) #attribute-view interaction similarity feature
+    # des_features = pickle.load(open(DESVIEW_SIMILARITY_FEATURE_PATH, "rb")) #description/name-view interaction similarity feature
+    # train_candidate = pickle.load(open(TRAIN_CANDIDATES_PATH, "rb"))
+    # test_candidate = pickle.load(open(TEST_CANDIDATES_PATH, "rb"))
     all_features = [] #[nei-view cat att-view cat des/name-view]
     for i in range(len(entity_pairs)):
         all_features.append(nei_features[i]+ att_features[i]+ des_features[i])# 42 concat 42 concat 1.

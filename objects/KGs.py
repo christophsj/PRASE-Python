@@ -71,6 +71,14 @@ class KGs:
                 else self.kg_l.ent_lite_list_by_id[counterpart_id]
             return counterpart, self.sub_ent_prob[ent.id] if source else self.sup_ent_prob[ent.id]
 
+    def get_all_counterpart_and_prob(self):
+        ent_list = []
+        for ent in (self.kg_l.entity_set | self.kg_r.entity_set):
+            counterpart, prob = self.__get_counterpart_and_prob(ent)
+            if counterpart is not None:
+                ent_list.append((ent, counterpart, prob))
+        return ent_list
+
     def __set_counterpart_and_prob(self, ent_l, ent_r, prob, force=False):
         source = ent_l.affiliation is self.kg_l
         l_id, r_id = ent_l.id, ent_r.id
@@ -511,7 +519,7 @@ class KGsUtil:
 
         return obj_l, obj_r, prob
 
-    def load_ent_links(self, links=None, func=None, num=None, init_value=None, threshold_min=0.0,
+    def load_ent_links(self, links, func=None, num=None, init_value=None, threshold_min=0.0,
                        threshold_max=1.0,
                        force=False):
         if links is None:

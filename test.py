@@ -96,7 +96,8 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, ground_truth_path=None, 
         # load_weight: scale the mapping probability predicted by the PARIS module if loading PRASE from check point
         kgs.util.reset_ent_align_prob(lambda x: reset_weight * x)
 
-    alignment_state = embed_module.step(kgs.kg_l, kgs.kg_r, AlignmentState(entity_alignments=kgs.util.ent_links_candidate))
+    entity_alignments = list(map(lambda x: (x[0].id, x[1].id, x[2]), kgs.get_all_counterpart_and_prob()))
+    alignment_state = embed_module.step(kgs.kg_l, kgs.kg_r, AlignmentState(entity_alignments=entity_alignments))
 
     # mapping feedback
     if load_ent is True:
@@ -120,7 +121,11 @@ def get_embedding_module():
     #     mapping_l_path=os.path.join(embed_output_path, "kg1_ent_ids"),
     #     mapping_r_path=os.path.join(embed_output_path, "kg2_ent_ids")
     # )
-    embedding_module = BertIntModule(des_dict_path="model/bert_int/data/dbp15k/2016-10-des_dict")
+    embedding_module = BertIntModule(
+        # des_dict_path="model/bert_int/data/dbp15k/2016-10-des_dict",
+        description_name_1="http://purl.org/dc/elements/1.1/description",
+        description_name_2="http://schema.org/description",
+        alignment_threshold=0.95)
     # embedding_module = DummyModule()
 
     logger.info(f"Using {embedding_module.__class__.__name__} as the embedding module")
@@ -143,7 +148,7 @@ def main():
     kgs.set_worker_num(1)
 
     # set the iteration number of PARIS
-    kgs.set_iteration(10)
+    kgs.set_iteration(1)
 
     # ground truth mapping path
     ground_truth_mapping_path = os.path.join(dataset_path, "ent_links")
@@ -153,7 +158,7 @@ def main():
 
     # using the following line of code to run the initial iteration of PRASE (i.e., PARIS, without any feedback)
     # the ground truth path is used to show the metrics during the iterations of PARIS
-    # run_init_iteration(kgs=kgs, ground_truth_path=ground_truth_mapping_path)
+    run_init_iteration(kgs=kgs, ground_truth_path=ground_truth_mapping_path)
 
     # run PRASE using both the embedding and mapping feedback
 

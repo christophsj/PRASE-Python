@@ -22,7 +22,11 @@ def get_name(string):
 def ent2desTokens_generate(Tokenizer,des_dict_path,ent_list_1,ent_list_2,des_limit = DES_LIMIT_LENGTH - 2):
     #ent_list_1/2 == two different language ent list
     print("load desription data from... :", des_dict_path)
+    # print current dir
     ori_des_dict = pickle.load(open(des_dict_path,"rb"))
+    return ent2desTokens_generateFromDict(Tokenizer,ori_des_dict,ent_list_1,ent_list_2,des_limit)
+
+def ent2desTokens_generateFromDict(Tokenizer,ori_des_dict,ent_list_1,ent_list_2,des_limit = DES_LIMIT_LENGTH - 2):
     ent2desTokens = dict()
     ent_set_1 = set(ent_list_1)
     ent_set_2 = set(ent_list_2)

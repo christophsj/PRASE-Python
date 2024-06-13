@@ -18,7 +18,7 @@ TOPK = 50
 NEG_NUM = 2 # negative sample num
 MARGIN = 3 # margin
 LEARNING_RATE = 1e-5 # learning rate
-TRAIN_BATCH_SIZE = 24
+TRAIN_BATCH_SIZE = 16
 TEST_BATCH_SIZE = 128
 
 DES_LIMIT_LENGTH = 128 # max length of description/name.
