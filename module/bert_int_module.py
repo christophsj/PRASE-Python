@@ -1,10 +1,13 @@
 from dataclasses import dataclass, asdict
 
+import torch
 from transformers import BertTokenizer
 
+from model.bert_int.Basic_Bert_Unit_model import Basic_Bert_Unit_model
 from model.bert_int.basic_bert_unit.Read_data_func import ent2desTokens_generate, ent2Tokens_gene, ent2bert_input, \
     ent2desTokens_generateFromDict
 from model.bert_int.basic_bert_unit.main import train_basic_bert
+from model.bert_int.interaction_model.Param import BASIC_BERT_UNIT_MODEL_OUTPUT_DIM, CUDA_NUM
 from model.bert_int.interaction_model.get_entity_embedding import main as get_entity_embedding_main
 
 from module.module import AlignmentState, Module
@@ -43,11 +46,12 @@ class BertIntInput:
 class BertIntModule(Module):
 
     def __init__(self, des_dict_path: str | None = None, description_name_1: str = None, description_name_2: str = None,
-                 alignment_threshold: float = 0.8):
+                 alignment_threshold: float = 0.8, model_path=None):
         self.des_dict_path = des_dict_path
         self.alignment_threshold = alignment_threshold
         self.description_name_l = description_name_1
         self.description_name_r = description_name_2
+        self.model_path = model_path
 
     @staticmethod
     def get_affiliation(kg_l: KG, kg_r: KG, name):
@@ -59,9 +63,27 @@ class BertIntModule(Module):
 
         raise f"{name} not found in either KG!"
 
+    @staticmethod
+    def __load_model_from_path(bert_model_path: str):
+        Model = Basic_Bert_Unit_model(768, BASIC_BERT_UNIT_MODEL_OUTPUT_DIM)
+        Model.load_state_dict(torch.load(bert_model_path, map_location='cpu'))
+        print("loading basic bert unit model from:  {}".format(bert_model_path))
+        Model.eval()
+        for name, v in Model.named_parameters():
+            v.requires_grad = False
+        Model = Model.cuda(CUDA_NUM)
+        return Model
+
     def step(self, kg1: KG, kg2: KG, state: AlignmentState) -> AlignmentState:
+        ent_emb_dict, entity_pairs = self.run_basic_unit(kg1, kg2, state)
+        return AlignmentState(entity_embeddings=ent_emb_dict, entity_alignments=entity_pairs)
+
+    def run_basic_unit(self, kg1, kg2, state):
         bert_int_data = self.convert_data(kg1, kg2, state)
-        trained_module = train_basic_bert(**bert_int_data.dict())
+        if self.model_path is not None:
+            trained_module = self.__load_model_from_path(self.model_path)
+        else:
+            trained_module = train_basic_bert(**bert_int_data.dict())
         ent_emb, entity_pairs = get_entity_embedding_main(trained_module,
                                                           bert_int_data.train_ill,
                                                           bert_int_data.test_ill,
@@ -70,13 +92,11 @@ class BertIntModule(Module):
             self.get_affiliation(kg1, kg2, bert_int_data.index2entity[idx]): {bert_int_data.index2entity[idx]: emb}
             for idx, emb in enumerate(ent_emb)
         }
-
         entity_pairs = list(map(lambda triple:
                                 (bert_int_data.index2entity[triple[0]],
                                  bert_int_data.index2entity[triple[1]],
                                  triple[2]), entity_pairs))
-
-        return AlignmentState(entity_embeddings=ent_emb_dict, entity_alignments=entity_pairs)
+        return ent_emb_dict, entity_pairs
 
     def convert_data(self, kg_l: KG, kg_r: KG, state: AlignmentState) -> BertIntInput:
 
@@ -149,7 +169,7 @@ class BertIntModule(Module):
             descriptions_dict = {ent.name: val.value for ent, attr, val in descriptions_l + descriptions_r}
             ent2desTokens = ent2desTokens_generateFromDict(Tokenizer, descriptions_dict,
                                                            [index2entity[id] for id in entid_1],
-                                                   [index2entity[id] for id in entid_2])
+                                                           [index2entity[id] for id in entid_2])
         else:
             ent2desTokens = None
 

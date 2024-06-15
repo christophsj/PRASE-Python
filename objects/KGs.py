@@ -526,8 +526,10 @@ class KGsUtil:
             raise Exception("No links to load")
 
         ent_link_list = list(
-            map(lambda x: self.__transform_ent_links(x, init_value, threshold_min, threshold_max, func),
-                links)
+            filter(lambda x: x is not None,
+                   map(lambda x: self.__transform_ent_links(x, init_value, threshold_min, threshold_max, func),
+                       links)
+                   )
         )
 
         random_list = random.choices(ent_link_list, k=num) if num is not None else ent_link_list
