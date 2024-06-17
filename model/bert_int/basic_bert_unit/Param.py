@@ -9,7 +9,7 @@ TRAIN_ILL_RATE = 0.3 # (only work when RANDOM_DIVIDE_ILL == True) training data 
 
 SEED_NUM = 11037
 
-EPOCH_NUM = 5 #training epoch num
+EPOCH_NUM = 2 #training epoch num
 
 NEAREST_SAMPLE_NUM = 128
 CANDIDATE_GENERATOR_BATCH_SIZE = 128
@@ -19,7 +19,7 @@ NEG_NUM = 2 # negative sample num
 MARGIN = 3 # margin
 LEARNING_RATE = 1e-5 # learning rate
 TRAIN_BATCH_SIZE = 16
-TEST_BATCH_SIZE = 128
+TEST_BATCH_SIZE = 64
 
 DES_LIMIT_LENGTH = 128 # max length of description/name.
 

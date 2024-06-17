@@ -519,7 +519,7 @@ class KGsUtil:
 
         return obj_l, obj_r, prob
 
-    def load_ent_links(self, links, func=None, num=None, init_value=None, threshold_min=0.0,
+    def load_ent_links(self, links: tuple[str, str, float], func=None, num=None, init_value=None, threshold_min=0.0,
                        threshold_max=1.0,
                        force=False):
         if links is None:

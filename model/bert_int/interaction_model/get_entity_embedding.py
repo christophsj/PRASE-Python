@@ -28,12 +28,14 @@ def candidate_generate(ents1, ents2, ent_emb, candidate_topk=50, bs=32, cuda_num
     for i in range(len(index)):
         e1 = ents1[i]
         e2_list = np.array(ents2)[index[i]].tolist()
+        score_list = score[i].tolist()
         ent2candidates[e1] = e2_list
-        ent2candidatesWithScore[e1] = e2_list, score[i]
+        ent2candidatesWithScore[e1] = zip(e2_list, score_list)
     return ent2candidates, ent2candidatesWithScore
 
 
-def all_entity_pairs_gene(candidate_dict_list, ill_pair_list):
+def all_entity_pairs_gene(candidate_dict_list: list[dict[int, list[tuple[int, float]]]], ill_pair_list)\
+        -> list[tuple[int, int, float]]:
     # generate list of all candidate entity pairs.
     entity_pairs_list = []
     for candidate_dict in candidate_dict_list:
@@ -42,7 +44,8 @@ def all_entity_pairs_gene(candidate_dict_list, ill_pair_list):
                 entity_pairs_list.append((e1, e2, score))
     for ill_pair in ill_pair_list:
         for e1, e2 in ill_pair:
-            entity_pairs_list.append((e1, e2))
+            entity_pairs_list.append((e1, e2, 1.0))
+
     entity_pairs_list = list(set(entity_pairs_list))
     print("entity_pair (e1,e2) num is: {}".format(len(entity_pairs_list)))
     return entity_pairs_list
@@ -51,7 +54,7 @@ def all_entity_pairs_gene(candidate_dict_list, ill_pair_list):
 def main(Model, train_ill, test_ill, eid2data):
     print("----------------get entity embedding--------------------")
     cuda_num = CUDA_NUM
-    batch_size = 256
+    batch_size = 32
     print("GPU NUM:", cuda_num)
 
     # load basic bert unit model
@@ -113,4 +116,4 @@ def main(Model, train_ill, test_ill, eid2data):
     # pickle.dump(entity_pairs, open(ENT_PAIRS_PATH, "wb"))
     print("save entity_pairs save....")
     print("entity_pairs num: {}".format(len(entity_pairs)))
-    return ent_emb, entity_pairs
+    return ent_emb, entity_pairs, train_candidates, test_candidates

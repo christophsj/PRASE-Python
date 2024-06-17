@@ -4,7 +4,7 @@ import numpy as np
 
 from objects.KG import KG
 
-entity_id: TypeAlias = str | int
+entity_id: TypeAlias = str
 relation_id: TypeAlias = str
 confidence: TypeAlias = float
 entity_alignment: TypeAlias = list[tuple[entity_id, entity_id, confidence]]

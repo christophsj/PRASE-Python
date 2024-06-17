@@ -2,6 +2,7 @@ import time
 from .utils import *
 import copy
 from torch.nn import init
+from torch import nn
 
 class MlP(nn.Module):
     def __init__(self,input_dim,hidden_dim):
@@ -92,7 +93,8 @@ def one_step_train(Model, Optimizer, Criterion, Train_gene, f_emb, cuda_num):
     return epoch_loss
 
 
-def test(Model, test_candidate, test_ill, entpair2f_idx, f_emb, batch_size, cuda_num, test_topk):
+def test(Model, test_candidate, test_ill, entpair2f_idx, f_emb, batch_size, cuda_num, test_topk)\
+        -> dict[int, list[int, float, int]]:
     test_ill_set = set(test_ill)
     test_pairs = []#all candidate entity pairs of Test set.
     for e1 in [a for a, b in test_ill]:
@@ -148,17 +150,21 @@ def test(Model, test_candidate, test_ill, entpair2f_idx, f_emb, batch_size, cuda
         MRR += (1 / (i + 1)) * result_labels[i]
     MRR /= all_test_num
     print("MRR:", MRR)
+    return e1_to_e2andscores
 
 
 def train(Model, Optimizer, Criterion, Train_gene, f_emb_list, test_candidate, test_ill,
           entpair2f_idx, epoch_num, eval_num, cuda_num, test_topk):
     feature_emb = torch.FloatTensor(f_emb_list)
     print("start training interaction model!")
+    e1_to_e2_dict = None
     for epoch in range(epoch_num):
         start_time = time.time()
         epoch_loss = one_step_train(Model, Optimizer, Criterion, Train_gene, feature_emb, cuda_num)
         print("Epoch {} loss {:.4f} using time {:.3f}".format(epoch, epoch_loss, time.time() - start_time))
         if (epoch + 1) % eval_num == 0 and epoch != 0 :
             start_time = time.time()
-            test(Model, test_candidate, test_ill, entpair2f_idx, feature_emb, 2048, cuda_num, test_topk)
+            e1_to_e2_dict = test(Model, test_candidate, test_ill, entpair2f_idx, feature_emb, 2048, cuda_num, test_topk)
             print("test using time {:.3f}".format(time.time() - start_time))
+
+    return e1_to_e2_dict

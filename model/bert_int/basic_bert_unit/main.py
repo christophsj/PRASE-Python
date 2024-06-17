@@ -18,18 +18,11 @@ def fixed(seed):
     np.random.seed(seed)
 
 
-def train_basic_bert(ent_ill, train_ill, test_ill,
-                     index2rel, index2entity, rel2index, entity2index,
-                     ent2data, rel_triples_1, rel_triples_2) -> nn.Module:
+def train_basic_bert(ent_ill, train_ill, test_ill, index2entity, ent2data) -> nn.Module:
     # model
     Model = Basic_Bert_Unit_model(MODEL_INPUT_DIM, MODEL_OUTPUT_DIM)
     Model.cuda(CUDA_NUM)
 
-    print("all entity ILLs num:", len(ent_ill))
-    print("rel num:", len(index2rel))
-    print("ent num:", len(index2entity))
-    print("triple1 num:", len(rel_triples_1))
-    print("triple2 num:", len(rel_triples_2))
 
     # get train/test_ill
     if RANDOM_DIVIDE_ILL:
@@ -59,8 +52,3 @@ def train_basic_bert(ent_ill, train_ill, test_ill,
                                            neg_num=NEG_NUM)
 
     return train(Model, Criterion, Optimizer, Train_gene, train_ill, test_ill, ent2data)
-
-
-if __name__ == '__main__':
-    fixed(SEED_NUM)
-    train_basic_bert()

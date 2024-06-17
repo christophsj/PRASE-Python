@@ -96,7 +96,7 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, ground_truth_path=None, 
         # load_weight: scale the mapping probability predicted by the PARIS module if loading PRASE from check point
         kgs.util.reset_ent_align_prob(lambda x: reset_weight * x)
 
-    entity_alignments = list(map(lambda x: (x[0].id, x[1].id, x[2]), kgs.get_all_counterpart_and_prob()))
+    entity_alignments = list(map(lambda x: (x[0].name, x[1].name, x[2]), kgs.get_all_counterpart_and_prob()))
     alignment_state = embed_module.step(kgs.kg_l, kgs.kg_r, AlignmentState(entity_alignments=entity_alignments))
 
     # mapping feedback
@@ -125,6 +125,7 @@ def get_embedding_module():
         # des_dict_path="model/bert_int/data/dbp15k/2016-10-des_dict",
         description_name_1="http://purl.org/dc/elements/1.1/description",
         description_name_2="http://schema.org/description",
+        model_path="model/bert_int/Save_model/DBP15K_jaenmodel_epoch_4.p",
         alignment_threshold=0.95)
     # embedding_module = DummyModule()
 

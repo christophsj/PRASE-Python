@@ -1,6 +1,8 @@
 from dataclasses import dataclass, asdict
 
 import torch
+import logging
+
 from transformers import BertTokenizer
 
 from model.bert_int.Basic_Bert_Unit_model import Basic_Bert_Unit_model
@@ -8,39 +10,22 @@ from model.bert_int.basic_bert_unit.Read_data_func import ent2desTokens_generate
     ent2desTokens_generateFromDict
 from model.bert_int.basic_bert_unit.main import train_basic_bert
 from model.bert_int.interaction_model.Param import BASIC_BERT_UNIT_MODEL_OUTPUT_DIM, CUDA_NUM
+from model.bert_int.interaction_model.clean_attribute_data import clean_attribute_data
+from model.bert_int.interaction_model.get_attributeValue_embedding import get_attribute_value_embedding
+from model.bert_int.interaction_model.get_attributeView_interaction_feature import get_attributeView_interaction_feature
 from model.bert_int.interaction_model.get_entity_embedding import main as get_entity_embedding_main
+from model.bert_int.interaction_model.get_neighView_and_desView_interaction_feature import \
+    get_neightview_and_desview_interaction_feature
+from model.bert_int.interaction_model.interaction_model import interaction_model as train_interaction_model
+from module.bert_int_input import BertIntInput
 
 from module.module import AlignmentState, Module
 from objects.Entity import Entity
 from objects.KG import KG
+from objects.Relation import Relation
 
-
-@dataclass
-class BertIntInput:
-    ent_ill: list[tuple[int, int]]
-    train_ill: list[tuple[int, int]]
-    test_ill: list[tuple[int, int]]
-    index2rel: dict[int, str]
-    index2entity: dict[int, str]
-    rel2index: dict[str, int]
-    entity2index: dict[str, int]
-    ent2data: dict[int, tuple[list[int], list[int]]]
-    rel_triples_1: list[tuple[int, int, int]]
-    rel_triples_2: list[tuple[int, int, int]]
-
-    def dict(self):
-        return {
-            'ent_ill': self.ent_ill,
-            'train_ill': self.train_ill,
-            'test_ill': self.test_ill,
-            'index2rel': self.index2rel,
-            'index2entity': self.index2entity,
-            'rel2index': self.rel2index,
-            'entity2index': self.entity2index,
-            'ent2data': self.ent2data,
-            'rel_triples_1': self.rel_triples_1,
-            'rel_triples_2': self.rel_triples_2
-        }
+logging.basicConfig(level=logging.INFO, force=True)
+logger = logging.getLogger()
 
 
 class BertIntModule(Module):
@@ -61,7 +46,7 @@ class BertIntModule(Module):
         if name in kg_r.entity_dict_by_name:
             return kg_l
 
-        raise f"{name} not found in either KG!"
+        raise Exception(f"{name} not found in either KG!")
 
     @staticmethod
     def __load_model_from_path(bert_model_path: str):
@@ -75,8 +60,75 @@ class BertIntModule(Module):
         return Model
 
     def step(self, kg1: KG, kg2: KG, state: AlignmentState) -> AlignmentState:
-        ent_emb_dict, entity_pairs = self.run_basic_unit(kg1, kg2, state)
+        # _, _, _, entity_pairs, ent_emb_dict = self.run_basic_unit(kg1, kg2, state)
+        bert_int_data, ent_emb_dict, entity_pairs = self.run_interaction_model(kg1, kg2, state)
         return AlignmentState(entity_embeddings=ent_emb_dict, entity_alignments=entity_pairs)
+
+    @staticmethod
+    def __e2_and_scores_to_e2(scores: list[str, float, int]) -> tuple[int, float]:
+        max_score = 0
+        result_entity = None
+        for e2, score, _ in scores:
+            if score > max_score:
+                result_entity = e2
+                max_score = score
+        return result_entity, max_score
+
+    def run_interaction_model(self, kg1: KG, kg2: KG, state: AlignmentState):
+        bert_int_data, trained_module, ent_emb, entity_pairs, ent_emb_dict, \
+            train_candidates, test_candidates = self.run_basic_unit(kg1, kg2, state)
+
+        keep_attr_1, keep_attr_2, remove_data_1, remove_data_2 = clean_attribute_data(
+            kg1.attribute_tuple_list, kg2.attribute_tuple_list
+        )
+        att_datas = list(
+            map(lambda x: (bert_int_data.entity2index[x[0]], x[1], x[2], x[3]), [*keep_attr_1, *keep_attr_2]))
+        value_emb, value_set = get_attribute_value_embedding(
+            Model=trained_module,
+            att_datas=att_datas,
+        )
+        entity_pairs_without_score = list(map(lambda x: (x[0], x[1]), entity_pairs))
+        neighViewInterF, desViewInterF = get_neightview_and_desview_interaction_feature(
+            input_data=bert_int_data,
+            ent_emb=ent_emb,
+            entity_pairs=entity_pairs_without_score
+        )
+        attrViewF = get_attributeView_interaction_feature(
+            input_data=bert_int_data,
+            att_datas=att_datas,
+            value_emb=value_emb,
+            entity_pairs=entity_pairs_without_score,
+            value_list=value_set
+        )
+        e1_to_e2_dict, ent_emb = train_interaction_model(
+            bert_int_data=bert_int_data,
+            entity_pairs=entity_pairs_without_score,
+            att_features=attrViewF,
+            des_features=desViewInterF,
+            nei_features=neighViewInterF,
+            test_candidate=test_candidates,
+            train_candidate=train_candidates,
+        )
+
+        ent_emb_dict = self.__ent_emb_to_dict(kg1, kg2, bert_int_data, ent_emb)
+
+        entity_pairs_by_name = []
+        for e1, score_list in e1_to_e2_dict.items():
+            e2, score = self.__e2_and_scores_to_e2(score_list)
+            entity_pairs_by_name.append((bert_int_data.index2entity[e1], bert_int_data.index2entity[e2], score))
+
+        entity_pairs_by_name = list(map(
+            lambda x: (bert_int_data.index2entity[x[0]], bert_int_data.index2entity[x[1][0]], 1.0),
+            e1_to_e2_dict.items()
+        ))
+
+        return bert_int_data, ent_emb_dict, entity_pairs_by_name
+
+    def __ent_emb_to_dict(self, kg1, kg2, bert_int_data, ent_emb):
+        return {
+            self.get_affiliation(kg1, kg2, bert_int_data.index2entity[idx]): {bert_int_data.index2entity[idx]: emb}
+            for idx, emb in enumerate(ent_emb)
+        }
 
     def run_basic_unit(self, kg1, kg2, state):
         bert_int_data = self.convert_data(kg1, kg2, state)
@@ -84,50 +136,74 @@ class BertIntModule(Module):
             trained_module = self.__load_model_from_path(self.model_path)
         else:
             trained_module = train_basic_bert(**bert_int_data.dict())
-        ent_emb, entity_pairs = get_entity_embedding_main(trained_module,
-                                                          bert_int_data.train_ill,
-                                                          bert_int_data.test_ill,
-                                                          bert_int_data.ent2data)
-        ent_emb_dict = {
-            self.get_affiliation(kg1, kg2, bert_int_data.index2entity[idx]): {bert_int_data.index2entity[idx]: emb}
-            for idx, emb in enumerate(ent_emb)
-        }
-        entity_pairs = list(map(lambda triple:
-                                (bert_int_data.index2entity[triple[0]],
-                                 bert_int_data.index2entity[triple[1]],
-                                 triple[2]), entity_pairs))
-        return ent_emb_dict, entity_pairs
+        ent_emb, entity_pairs, train_candidates, test_candidates = get_entity_embedding_main(trained_module,
+                                                                                             bert_int_data.train_ill,
+                                                                                             bert_int_data.test_ill,
+                                                                                             bert_int_data.ent2data)
+        ent_emb_dict = self.__ent_emb_to_dict(kg1, kg2, bert_int_data, ent_emb)
+        return bert_int_data, trained_module, ent_emb, entity_pairs, ent_emb_dict, train_candidates, test_candidates
+
+    @staticmethod
+    def __object_relation_tuples_to_primitive(ent2index: dict, rel2index: dict, relation_tuple_list: list[tuple[Entity, Relation, Entity]]):
+        return [(ent2index[head.name], rel2index[relation.name], ent2index[tail.name])
+                for head, relation, tail in relation_tuple_list]
+
+    @staticmethod
+    def __dict_head(dictionary: dict, size=5) -> dict:
+        print_size = min(size, len(dictionary))
+        return {k: dictionary[k] for k in list(dictionary.keys())[:print_size]}
+
+    @staticmethod
+    def __list_head(my_list: list, size=5) -> list:
+        print_size = min(size, len(my_list))
+        return my_list[:print_size]
 
     def convert_data(self, kg_l: KG, kg_r: KG, state: AlignmentState) -> BertIntInput:
-
+        logger.info("Converting data...")
         # ent_index(ent_id)2entity / relation_index(rel_id)2relation
         # index2entity = read_id2object([data_path + "ent_ids_1",data_path + "ent_ids_2"])
 
-        index2entity_l = {e.id: e.name for e in kg_l.entity_set}
-        index2entity_r = {e.id: e.name for e in kg_r.entity_set}
+        for idx, entity in enumerate(kg_l.entity_set | kg_r.entity_set):
+            entity.global_entity_id = idx
+
+        index2entity_l = {e.global_entity_id: e.name for e in kg_l.entity_set}
+        index2entity_r = {e.global_entity_id: e.name for e in kg_r.entity_set}
         index2entity = {**index2entity_l, **index2entity_r}
+
+        logger.info(f"Index2Entity: {self.__dict_head(index2entity)}")
 
         # index2rel = read_id2object([data_path + "rel_ids_1",data_path + "rel_ids_2"])
 
-        index2rel_l = {r.id: r.name for r in kg_l.relation_set}
-        index2rel_r = {r.id: r.name for r in kg_r.relation_set}
+        for idx, entity in enumerate(kg_l.relation_set | kg_r.relation_set):
+            entity.global_relation_id = idx
+
+        index2rel_l = {r.global_relation_id: r.name for r in kg_l.relation_set}
+        index2rel_r = {r.global_relation_id: r.name for r in kg_r.relation_set}
         index2rel = {**index2rel_l, **index2rel_r}
+
+        logger.info(f"Index2Relation: {self.__dict_head(index2rel)}")
 
         entity2index = {e: idx for idx, e in index2entity.items()}
         rel2index = {r: idx for idx, r in index2rel.items()}
+
+        logger.info(f"Entity2Index: {self.__dict_head(entity2index)}")
+        logger.info(f"Rel2Index: {self.__dict_head(rel2index)}")
 
         # triples
         # rel_triples_1 = read_idtuple_file(data_path + 'triples_1')
         # rel_triples_2 = read_idtuple_file(data_path + 'triples_2')
 
-        rel_triples_1 = kg_l.relation_tuple_list
-        rel_triples_2 = kg_r.relation_tuple_list
+        rel_triples_1 = self.__object_relation_tuples_to_primitive(entity2index, rel2index, kg_l.relation_tuple_list)
+        rel_triples_2 = self.__object_relation_tuples_to_primitive(entity2index, rel2index, kg_r.relation_tuple_list)
+
+        logger.info(f"RelTriples1: {self.__list_head(rel_triples_1)}")
+        logger.info(f"RelTriples2: {self.__list_head(rel_triples_2)}")
 
         # index_with_entity_1 = read_idobj_tuple_file(data_path + 'ent_ids_1')
         # index_with_entity_2 = read_idobj_tuple_file(data_path + 'ent_ids_2')
 
-        index_with_entity_1 = [(e.id, e.name) for e in kg_l.entity_set]
-        index_with_entity_2 = [(e.id, e.name) for e in kg_r.entity_set]
+        index_with_entity_1 = [(e.global_entity_id, e.name) for e in kg_l.entity_set]
+        index_with_entity_2 = [(e.global_entity_id, e.name) for e in kg_r.entity_set]
 
         # ill
         # train_ill = read_idtuple_file(data_path + 'sup_pairs')
@@ -137,14 +213,19 @@ class BertIntModule(Module):
         test_ill = []
 
         for e1, e2, prob in state.entity_alignments:
+            my_tuple = (entity2index[e1], entity2index[e2])
             if prob > self.alignment_threshold:
-                train_ill.append((e1, e2))
+                train_ill.append(my_tuple)
             else:
-                test_ill.append((e1, e2))
+                test_ill.append(my_tuple)
 
         ent_ill = []
         ent_ill.extend(train_ill)
         ent_ill.extend(test_ill)
+
+        logger.info(f"TrainILL: {self.__list_head(train_ill)}")
+        logger.info(f"TestILL: {self.__list_head(test_ill)}")
+        logger.info(f"EntILL: {self.__list_head(ent_ill)}")
 
         # ent_idx
         entid_1 = [entid for entid, _ in index_with_entity_1]
@@ -153,7 +234,11 @@ class BertIntModule(Module):
         entid_2 = [entid for entid, _ in index_with_entity_2]
         # entid_2 = [e.id for e in kg_r.entity_set]
 
-        entids = list(range(len(index2entity)))
+        entids = [*entid_1, *entid_2]
+
+        logger.info(f"EntID1: {self.__list_head(entid_1)}")
+        logger.info(f"EntID2: {self.__list_head(entid_2)}")
+        logger.info(f"EntIDs: {self.__list_head(entids)}")
 
         # ent2descriptionTokens
         Tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
@@ -173,9 +258,14 @@ class BertIntModule(Module):
         else:
             ent2desTokens = None
 
+        logger.info(f"Ent2DesTokens: {self.__dict_head(ent2desTokens)}")
+
         # ent2basicBertUnit_input.
         ent2tokenids = ent2Tokens_gene(Tokenizer, ent2desTokens, entids, index2entity)
         ent2data = ent2bert_input(entids, Tokenizer, ent2tokenids)
+
+        logger.info(f"Ent2Data: {self.__dict_head(ent2data)}")
+        logger.info(f"Ent2TokenIDs: {self.__dict_head(ent2tokenids)}")
 
         return BertIntInput(
             ent_ill=ent_ill,
