@@ -125,8 +125,10 @@ def get_embedding_module():
         # des_dict_path="model/bert_int/data/dbp15k/2016-10-des_dict",
         description_name_1="http://purl.org/dc/elements/1.1/description",
         description_name_2="http://schema.org/description",
-        model_path="model/bert_int/Save_model/DBP15K_jaenmodel_epoch_4.p",
-        alignment_threshold=0.95)
+        # model_path="model/bert_int/Save_model/DBP15K_jaenmodel_epoch_4.p",
+        interaction_model=False,
+        alignment_threshold=0.999999
+    )
     # embedding_module = DummyModule()
 
     logger.info(f"Using {embedding_module.__class__.__name__} as the embedding module")
@@ -146,10 +148,10 @@ def main():
     kgs = construct_kgs(dataset_dir=dataset_path, name=dataset_name, load_chk=None)
 
     # set the number of processes
-    kgs.set_worker_num(1)
+    kgs.set_worker_num(10)
 
     # set the iteration number of PARIS
-    kgs.set_iteration(1)
+    kgs.set_iteration(10)
 
     # ground truth mapping path
     ground_truth_mapping_path = os.path.join(dataset_path, "ent_links")

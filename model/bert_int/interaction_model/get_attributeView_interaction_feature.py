@@ -1,10 +1,9 @@
 import logging
 
-from module.bert_int_input import BertIntInput
+from model.bert_int.bert_int_input import BertIntInput
 
 logging.basicConfig(level=logging.ERROR)
 import time
-from .read_data_func import *
 from .Param import *
 from .utils import *
 from .dual_aggregation_func import *

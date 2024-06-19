@@ -1,6 +1,6 @@
-from torch import optim, nn
+from torch import optim
 
-from module.bert_int_input import BertIntInput
+from model.bert_int.bert_int_input import BertIntInput
 from .model_train_test_func import *
 from .Param import *
 
@@ -50,4 +50,4 @@ def interaction_model(bert_int_data: BertIntInput, entity_pairs, nei_features, a
 
     #save
     torch.save(Model, open(INTERACTION_MODEL_SAVE_PATH, "wb"))
-    return e1_to_e2_dict, all_features
+    return e1_to_e2_dict

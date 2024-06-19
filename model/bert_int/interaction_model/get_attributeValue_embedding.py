@@ -73,7 +73,7 @@ def get_attribute_value_embedding(att_datas: list[tuple[int, str, str, str]], Mo
     # get attributeValue_embedding by basic bert unit model.
     Tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
     value_emb = attributeValue_emb_gene(value_set, Model, Tokenizer,
-                                        batch_size=2048, cuda_num=cuda_num, max_length=64)
+                                        batch_size=64, cuda_num=cuda_num, max_length=64)
     # pickle.dump(value_emb,open(ATTRIBUTEVALUE_EMB_PATH,"wb"))
     # pickle.dump(value_set,open(ATTRIBUTEVALUE_LIST_PATH,"wb"))
     print("save attributeValue embedding in: ", ATTRIBUTEVALUE_EMB_PATH)

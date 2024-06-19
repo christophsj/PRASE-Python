@@ -1,5 +1,3 @@
-from dataclasses import dataclass, asdict
-
 import torch
 import logging
 
@@ -17,7 +15,7 @@ from model.bert_int.interaction_model.get_entity_embedding import main as get_en
 from model.bert_int.interaction_model.get_neighView_and_desView_interaction_feature import \
     get_neightview_and_desview_interaction_feature
 from model.bert_int.interaction_model.interaction_model import interaction_model as train_interaction_model
-from module.bert_int_input import BertIntInput
+from model.bert_int.bert_int_input import BertIntInput
 
 from module.module import AlignmentState, Module
 from objects.Entity import Entity
@@ -31,12 +29,13 @@ logger = logging.getLogger()
 class BertIntModule(Module):
 
     def __init__(self, des_dict_path: str | None = None, description_name_1: str = None, description_name_2: str = None,
-                 alignment_threshold: float = 0.8, model_path=None):
+                 alignment_threshold: float = 0.8, model_path=None, interaction_model=True):
         self.des_dict_path = des_dict_path
         self.alignment_threshold = alignment_threshold
         self.description_name_l = description_name_1
         self.description_name_r = description_name_2
         self.model_path = model_path
+        self.interaction_model = interaction_model
 
     @staticmethod
     def get_affiliation(kg_l: KG, kg_r: KG, name):
@@ -60,12 +59,20 @@ class BertIntModule(Module):
         return Model
 
     def step(self, kg1: KG, kg2: KG, state: AlignmentState) -> AlignmentState:
-        # _, _, _, entity_pairs, ent_emb_dict = self.run_basic_unit(kg1, kg2, state)
-        bert_int_data, ent_emb_dict, entity_pairs = self.run_interaction_model(kg1, kg2, state)
+
+        if self.interaction_model:
+            _, ent_emb_dict, entity_pairs = self.run_interaction_model(kg1, kg2, state)
+        else:
+            bert_int_data, _, _, entity_pairs, ent_emb_dict, _, _ = self.run_basic_unit(kg1, kg2, state)
+            entity_pairs = list(map(lambda x: (bert_int_data.index2entity[x[0]],
+                                               bert_int_data.index2entity[x[1]],
+                                               x[2]),
+                                    entity_pairs))
+
         return AlignmentState(entity_embeddings=ent_emb_dict, entity_alignments=entity_pairs)
 
     @staticmethod
-    def __e2_and_scores_to_e2(scores: list[str, float, int]) -> tuple[int, float]:
+    def __take_max_candidate(scores: list[str, float, int]) -> tuple[int, float]:
         max_score = 0
         result_entity = None
         for e2, score, _ in scores:
@@ -100,7 +107,7 @@ class BertIntModule(Module):
             entity_pairs=entity_pairs_without_score,
             value_list=value_set
         )
-        e1_to_e2_dict, ent_emb = train_interaction_model(
+        e1_to_e2_dict = train_interaction_model(
             bert_int_data=bert_int_data,
             entity_pairs=entity_pairs_without_score,
             att_features=attrViewF,
@@ -110,18 +117,16 @@ class BertIntModule(Module):
             train_candidate=train_candidates,
         )
 
-        ent_emb_dict = self.__ent_emb_to_dict(kg1, kg2, bert_int_data, ent_emb)
-
+        count = 0
         entity_pairs_by_name = []
-        for e1, score_list in e1_to_e2_dict.items():
-            e2, score = self.__e2_and_scores_to_e2(score_list)
-            entity_pairs_by_name.append((bert_int_data.index2entity[e1], bert_int_data.index2entity[e2], score))
+        for e1, candidate_list in e1_to_e2_dict.items():
+            e2, score = self.__take_max_candidate(candidate_list)
+            if e2 is not None:
+                entity_pairs_by_name.append((bert_int_data.index2entity[e1], bert_int_data.index2entity[e2], score))
+            else:
+                count = count + 1
 
-        entity_pairs_by_name = list(map(
-            lambda x: (bert_int_data.index2entity[x[0]], bert_int_data.index2entity[x[1][0]], 1.0),
-            e1_to_e2_dict.items()
-        ))
-
+        logger.warning(f"{count} times without candidate")
         return bert_int_data, ent_emb_dict, entity_pairs_by_name
 
     def __ent_emb_to_dict(self, kg1, kg2, bert_int_data, ent_emb):
@@ -135,7 +140,7 @@ class BertIntModule(Module):
         if self.model_path is not None:
             trained_module = self.__load_model_from_path(self.model_path)
         else:
-            trained_module = train_basic_bert(**bert_int_data.dict())
+            trained_module = train_basic_bert(bert_int_data)
         ent_emb, entity_pairs, train_candidates, test_candidates = get_entity_embedding_main(trained_module,
                                                                                              bert_int_data.train_ill,
                                                                                              bert_int_data.test_ill,
@@ -144,7 +149,8 @@ class BertIntModule(Module):
         return bert_int_data, trained_module, ent_emb, entity_pairs, ent_emb_dict, train_candidates, test_candidates
 
     @staticmethod
-    def __object_relation_tuples_to_primitive(ent2index: dict, rel2index: dict, relation_tuple_list: list[tuple[Entity, Relation, Entity]]):
+    def __object_relation_tuples_to_primitive(ent2index: dict, rel2index: dict,
+                                              relation_tuple_list: list[tuple[Entity, Relation, Entity]]):
         return [(ent2index[head.name], rel2index[relation.name], ent2index[tail.name])
                 for head, relation, tail in relation_tuple_list]
 
@@ -214,7 +220,7 @@ class BertIntModule(Module):
 
         for e1, e2, prob in state.entity_alignments:
             my_tuple = (entity2index[e1], entity2index[e2])
-            if prob > self.alignment_threshold:
+            if prob >= self.alignment_threshold:
                 train_ill.append(my_tuple)
             else:
                 test_ill.append(my_tuple)

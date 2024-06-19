@@ -10,6 +10,8 @@ from .Batch_TrainData_Generator import Batch_TrainData_Generator
 from .train_func import train
 import numpy as np
 
+from ..bert_int_input import BertIntInput
+
 
 def fixed(seed):
     random.seed(seed)
@@ -18,7 +20,14 @@ def fixed(seed):
     np.random.seed(seed)
 
 
-def train_basic_bert(ent_ill, train_ill, test_ill, index2entity, ent2data) -> nn.Module:
+def train_basic_bert(bert_int_data: BertIntInput) -> nn.Module:
+    ent_ill, train_ill, test_ill, index2entity, ent2data = (
+        bert_int_data.ent_ill,
+        bert_int_data.train_ill,
+        bert_int_data.test_ill,
+        bert_int_data.index2entity,
+        bert_int_data.ent2data
+    )
     # model
     Model = Basic_Bert_Unit_model(MODEL_INPUT_DIM, MODEL_OUTPUT_DIM)
     Model.cuda(CUDA_NUM)

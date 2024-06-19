@@ -124,7 +124,7 @@ def train(Model,Criterion,Optimizer,Train_gene,train_ill,test_ill,entid2data):
             # test(Model,train_ill,entid2data,TEST_BATCH_SIZE,context="EVAL IN TRAIN SET")
             test(Model, test_ill, entid2data, TEST_BATCH_SIZE, context="EVAL IN TEST SET:")
 
-        return Model
+    return Model
 
 
 def test(Model,ent_ill,entid2data,batch_size,context = ""):

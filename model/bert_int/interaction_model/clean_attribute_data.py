@@ -31,14 +31,10 @@ http://dbpedia.org/resource/ŠK_Slovan_Bratislava        no      39
 http://dbpedia.org/resource/ŠK_Slovan_Bratislava        no      82
 http://dbpedia.org/resource/ŠK_Slovan_Bratislava        no      29
 """
-import os
 import copy
 
-from module.bert_int_input import BertIntInput
 from objects.Entity import Entity
 from objects.Relation import Relation
-from .Param import *
-from .utils import fixed
 
 
 def read_att_data(data_path):
