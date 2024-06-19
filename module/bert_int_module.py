@@ -1,3 +1,4 @@
+import re
 import torch
 import logging
 
@@ -5,7 +6,7 @@ from transformers import BertTokenizer
 
 from model.bert_int.Basic_Bert_Unit_model import Basic_Bert_Unit_model
 from model.bert_int.basic_bert_unit.Read_data_func import ent2desTokens_generate, ent2Tokens_gene, ent2bert_input, \
-    ent2desTokens_generateFromDict
+    ent2desTokens_generateFromDict, get_name
 from model.bert_int.basic_bert_unit.main import train_basic_bert
 from model.bert_int.interaction_model.Param import BASIC_BERT_UNIT_MODEL_OUTPUT_DIM, CUDA_NUM
 from model.bert_int.interaction_model.clean_attribute_data import clean_attribute_data
@@ -158,6 +159,11 @@ class BertIntModule(Module):
     def __dict_head(dictionary: dict, size=5) -> dict:
         print_size = min(size, len(dictionary))
         return {k: dictionary[k] for k in list(dictionary.keys())[:print_size]}
+    
+    @staticmethod
+    def __dict_tail(dictionary: dict, size=5) -> dict:
+        print_size = min(size, len(dictionary))
+        return {k: dictionary[k] for k in list(dictionary.keys())[-print_size:]}
 
     @staticmethod
     def __list_head(my_list: list, size=5) -> list:
@@ -251,19 +257,16 @@ class BertIntModule(Module):
         if self.des_dict_path != None:
             ent2desTokens = ent2desTokens_generate(Tokenizer, self.des_dict_path, [index2entity[id] for id in entid_1],
                                                    [index2entity[id] for id in entid_2])
-        elif self.description_name_l is not None and self.description_name_r is not None:
-            descriptions_l = [attribute_tuple for attribute_tuple in kg_l.attribute_tuple_list if
-                              attribute_tuple[1].name == self.description_name_l]
-            descriptions_r = [attribute_tuple for attribute_tuple in kg_r.attribute_tuple_list if
-                              attribute_tuple[1].name == self.description_name_r]
-
-            descriptions_dict = {ent.name: val.value for ent, attr, val in descriptions_l + descriptions_r}
-            ent2desTokens = ent2desTokens_generateFromDict(Tokenizer, descriptions_dict,
-                                                           [index2entity[id] for id in entid_1],
-                                                           [index2entity[id] for id in entid_2])
         else:
-            ent2desTokens = None
-
+            descriptions_dict_l = self._build_desc_dict_from_attribute_or_name(kg_l, self.description_name_l)
+            descriptions_dict_r = self._build_desc_dict_from_attribute_or_name(kg_r, self.description_name_r)
+            descriptions_dict = {**descriptions_dict_l, **descriptions_dict_r}
+            print(f"DescriptionsDict: {self.__dict_head(descriptions_dict)}")
+            print(f"DescriptionsDict: {self.__dict_tail(descriptions_dict)}")
+            exit(0)
+            ent2desTokens = ent2desTokens_generateFromDict(Tokenizer, descriptions_dict,
+                                                            [index2entity[id] for id in entid_1],
+                                                            [index2entity[id] for id in entid_2])
         logger.info(f"Ent2DesTokens: {self.__dict_head(ent2desTokens)}")
 
         # ent2basicBertUnit_input.
@@ -285,3 +288,25 @@ class BertIntModule(Module):
             rel_triples_1=rel_triples_1,
             rel_triples_2=rel_triples_2
         )
+
+    def _build_desc_dict_from_attribute_or_name(self, kg, description_name):
+        if description_name is None:
+            return {
+                ent.name: get_name(ent.name) for ent in kg.entity_set
+            }
+        descriptions_l = [attribute_tuple for attribute_tuple in kg.attribute_tuple_list if
+                              attribute_tuple[1].name == description_name]
+
+        descriptions_dict = {ent.name: get_name(ent.name) for ent in kg.entity_set}
+        descriptions_dict = {**descriptions_dict, **{ent.name: f"{self._get_name(ent.name)} {val.value}".strip() for ent, attr, val in descriptions_l}}
+        return descriptions_dict
+
+    @staticmethod
+    def _get_name(name):
+        processed_name = get_name(name)
+        # if name matches Q\d+ then it is a wikidata entity
+        if re.match(r"Q\d+", processed_name):
+            return ""
+        
+        return processed_name
+    
