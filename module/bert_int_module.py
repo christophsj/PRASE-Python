@@ -1,13 +1,14 @@
-import re
-import torch
 import logging
+import re
 
+import torch
 from transformers import BertTokenizer
 
 from model.bert_int.Basic_Bert_Unit_model import Basic_Bert_Unit_model
 from model.bert_int.basic_bert_unit.Read_data_func import ent2desTokens_generate, ent2Tokens_gene, ent2bert_input, \
     ent2desTokens_generateFromDict, get_name
 from model.bert_int.basic_bert_unit.main import train_basic_bert
+from model.bert_int.bert_int_input import BertIntInput
 from model.bert_int.interaction_model.Param import BASIC_BERT_UNIT_MODEL_OUTPUT_DIM, CUDA_NUM
 from model.bert_int.interaction_model.clean_attribute_data import clean_attribute_data
 from model.bert_int.interaction_model.get_attributeValue_embedding import get_attribute_value_embedding
@@ -16,8 +17,6 @@ from model.bert_int.interaction_model.get_entity_embedding import main as get_en
 from model.bert_int.interaction_model.get_neighView_and_desView_interaction_feature import \
     get_neightview_and_desview_interaction_feature
 from model.bert_int.interaction_model.interaction_model import interaction_model as train_interaction_model
-from model.bert_int.bert_int_input import BertIntInput
-
 from module.module import AlignmentState, Module
 from objects.Entity import Entity
 from objects.KG import KG
@@ -30,13 +29,16 @@ logger = logging.getLogger()
 class BertIntModule(Module):
 
     def __init__(self, des_dict_path: str | None = None, description_name_1: str = None, description_name_2: str = None,
-                 alignment_threshold: float = 0.8, model_path=None, interaction_model=True):
+                 training_threshold: float = 0.8, training_max_percentage: float = 0.5, result_align_threshold = 0.9, 
+                 model_path=None, interaction_model=True):
         self.des_dict_path = des_dict_path
-        self.alignment_threshold = alignment_threshold
+        self.training_threshhold = training_threshold
+        self.training_max_percentage = training_max_percentage
         self.description_name_l = description_name_1
         self.description_name_r = description_name_2
         self.model_path = model_path
         self.interaction_model = interaction_model
+        self.result_align_threshold = result_align_threshold
 
     @staticmethod
     def get_affiliation(kg_l: KG, kg_r: KG, name):
@@ -60,7 +62,6 @@ class BertIntModule(Module):
         return Model
 
     def step(self, kg1: KG, kg2: KG, state: AlignmentState) -> AlignmentState:
-
         if self.interaction_model:
             _, ent_emb_dict, entity_pairs = self.run_interaction_model(kg1, kg2, state)
         else:
@@ -70,7 +71,37 @@ class BertIntModule(Module):
                                                x[2]),
                                     entity_pairs))
 
-        return AlignmentState(entity_embeddings=ent_emb_dict, entity_alignments=entity_pairs)
+        new_pairs = self.__merge_entity_pairs_by_higher_prob(state.entity_alignments, entity_pairs)
+        return AlignmentState(entity_embeddings=ent_emb_dict, entity_alignments=new_pairs)
+
+    def __merge_entity_pairs_by_higher_prob(self, entity_pairs: list[tuple[str, str, float]],
+                                            new_entity_pairs: list[tuple[str, str, float]]):
+        entity_pairs_dict = self.__entity_pairs_to_dict(entity_pairs)
+        new_entity_pairs_dict = self.__entity_pairs_to_dict(new_entity_pairs)
+        entity_pairs_merged_dict = {}
+        for e1, e2, prob in new_entity_pairs:
+            if prob < self.result_align_threshold:
+                continue
+            if e1 not in entity_pairs_dict:
+                entity_pairs_merged_dict[e1] = (e2, prob)
+            else:
+                if prob > entity_pairs_dict[e1][1] and prob > entity_pairs_merged_dict.get(e1, (None, 0))[1]:
+                    entity_pairs_merged_dict[e1] = (e2, prob)
+
+        for e1, e2, prob in entity_pairs:
+            if e1 not in new_entity_pairs_dict and prob >= self.result_align_threshold:
+                entity_pairs_merged_dict[e1] = (e2, prob)
+
+        return list(map(lambda x: (x[0], x[1][0], x[1][1]), entity_pairs_merged_dict.items()))
+
+    @staticmethod
+    def __entity_pairs_to_dict(entity_pairs):
+        result = {}
+        for e1, e2, prob in entity_pairs:
+            result[e1] = e2, prob
+            result[e2] = e1, prob
+
+        return result
 
     @staticmethod
     def __take_max_candidate(scores: list[str, float, int]) -> tuple[int, float]:
@@ -159,7 +190,7 @@ class BertIntModule(Module):
     def __dict_head(dictionary: dict, size=5) -> dict:
         print_size = min(size, len(dictionary))
         return {k: dictionary[k] for k in list(dictionary.keys())[:print_size]}
-    
+
     @staticmethod
     def __dict_tail(dictionary: dict, size=5) -> dict:
         print_size = min(size, len(dictionary))
@@ -223,10 +254,11 @@ class BertIntModule(Module):
 
         train_ill = []
         test_ill = []
+        max_train_length = len(state.entity_alignments) * self.training_max_percentage
 
-        for e1, e2, prob in state.entity_alignments:
+        for e1, e2, prob in sorted(state.entity_alignments, key=lambda x: x[2], reverse=True):
             my_tuple = (entity2index[e1], entity2index[e2])
-            if prob >= self.alignment_threshold:
+            if prob >= self.alignment_threshold and len(train_ill) <= max_train_length:
                 train_ill.append(my_tuple)
             else:
                 test_ill.append(my_tuple)
@@ -264,8 +296,8 @@ class BertIntModule(Module):
             print(f"DescriptionsDict: {self.__dict_head(descriptions_dict)}")
             print(f"DescriptionsDict: {self.__dict_tail(descriptions_dict)}")
             ent2desTokens = ent2desTokens_generateFromDict(Tokenizer, descriptions_dict,
-                                                            [index2entity[id] for id in entid_1],
-                                                            [index2entity[id] for id in entid_2])
+                                                           [index2entity[id] for id in entid_1],
+                                                           [index2entity[id] for id in entid_2])
         logger.info(f"Ent2DesTokens: {self.__dict_head(ent2desTokens)}")
 
         # ent2basicBertUnit_input.
@@ -294,10 +326,12 @@ class BertIntModule(Module):
                 ent.name: get_name(ent.name) for ent in kg.entity_set
             }
         descriptions_l = [attribute_tuple for attribute_tuple in kg.attribute_tuple_list if
-                              attribute_tuple[1].name == description_name]
+                          attribute_tuple[1].name == description_name]
 
         descriptions_dict = {ent.name: get_name(ent.name) for ent in kg.entity_set}
-        descriptions_dict = {**descriptions_dict, **{ent.name: f"{self._get_name(ent.name)} {val.value}".strip() for ent, attr, val in descriptions_l}}
+        descriptions_dict = {**descriptions_dict,
+                             **{ent.name: f"{self._get_name(ent.name)} {val.value}".strip() for ent, attr, val in
+                                descriptions_l}}
         return descriptions_dict
 
     @staticmethod
@@ -306,6 +340,5 @@ class BertIntModule(Module):
         # if name matches Q\d+ then it is a wikidata entity
         if re.match(r"Q\d+", processed_name):
             return ""
-        
+
         return processed_name
-    

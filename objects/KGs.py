@@ -6,6 +6,7 @@ import random
 from typing import Iterable
 
 import numpy as np
+from objects.Entity import Entity
 from objects.KG import KG
 from model.paris.PARIS import one_iteration_one_way
 import multiprocessing as mp
@@ -72,12 +73,21 @@ class KGs:
             return counterpart, self.sub_ent_prob[ent.id] if source else self.sup_ent_prob[ent.id]
 
     def get_all_counterpart_and_prob(self):
-        ent_list = []
+        ent_list = set()
         for ent in (self.kg_l.entity_set | self.kg_r.entity_set):
             counterpart, prob = self.__get_counterpart_and_prob(ent)
             if counterpart is not None:
-                ent_list.append((ent, counterpart, prob))
+                ent_list.add(self.ordered_triple((ent, counterpart, prob)))
+                
         return ent_list
+    
+    def ordered_triple(self, triple: tuple[Entity, Entity, float]):
+        ent, counterpart, prob = triple
+        if ent.affiliation is self.kg_l:
+            return ent, counterpart, prob
+        
+        return counterpart, ent, prob
+        
 
     def __set_counterpart_and_prob(self, ent_l, ent_r, prob, force=False):
         source = ent_l.affiliation is self.kg_l
@@ -343,26 +353,9 @@ class KGsUtil:
                     print("Threshold: " + format(threshold_item, ".3f") + "\tPrecision: " + format(precision, ".6f") +
                           "\tRecall: " + format(recall, ".6f") + "\tF1-Score: " + format(f1_score, ".6f"))
 
-    def generate_input_for_embed_align(self, link_path, save_dir="output", threshold=0.0):
-        ent_align_predict, visited = set(), set()
-        for ent in self.kgs.kg_l.entity_set:
-            counterpart, prob = self.__get_counterpart_and_prob(ent)
-            if prob < threshold or counterpart is None:
-                continue
-            ent_align_predict.add((ent, counterpart))
-            visited.add(ent)
-
-        ent_align_test = set()
-        with open(link_path, "r", encoding="utf8") as f:
-            for line in f.readlines():
-                params = str.strip(line).split("\t")
-                ent_l, ent_r = params[0].strip(), params[1].strip()
-                obj_l, obj_r = self.kgs.kg_l.entity_dict_by_name.get(ent_l), self.kgs.kg_r.entity_dict_by_name.get(
-                    ent_r)
-                if obj_l is None or obj_r is None:
-                    continue
-                if obj_l not in visited:
-                    ent_align_test.add((obj_l, obj_r))
+    def write_input_for_embed_align(self, link_path, save_dir="output", threshold=0.1):
+        ent_align_predict, ent_align_test = self.generate_input_for_embed_align(link_path, threshold)
+        
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         train_path = os.path.join(save_dir, "train_links")
@@ -382,6 +375,30 @@ class KGsUtil:
         writer(test_path, ent_align_test)
         writer(valid_path, ent_align_test)
         print("training size: " + str(len(ent_align_predict)) + "\ttest size: " + str(len(ent_align_test)))
+        
+    
+    def generate_input_for_embed_align(self, link_path, threshold):
+        ent_align_predict, visited = set(), set()
+        for ent in self.kgs.kg_l.entity_set:
+            counterpart, prob = self.__get_counterpart_and_prob(ent)
+            if prob < threshold or counterpart is None:
+                continue
+            ent_align_predict.add((ent, counterpart))
+            visited.add(ent)
+
+        ent_align_test = set()
+        with open(link_path, "r", encoding="utf8") as f:
+            for line in f.readlines():
+                params = str.strip(line).split("\t")
+                ent_l, ent_r = params[0].strip(), params[1].strip()
+                obj_l, obj_r = self.kgs.kg_l.entity_dict_by_name.get(ent_l), self.kgs.kg_r.entity_dict_by_name.get(
+                    ent_r)
+                if obj_l is None or obj_r is None:
+                    continue
+                if obj_l not in visited:
+                    ent_align_test.add((obj_l, obj_r))
+        
+        return ent_align_predict, ent_align_test
 
     def save_results(self, path="output/EA_Result.txt"):
         ent_dict, lite_dict, attr_dict, rel_dict = dict(), dict(), dict(), dict()

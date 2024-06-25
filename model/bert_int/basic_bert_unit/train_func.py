@@ -119,9 +119,9 @@ def train(Model,Criterion,Optimizer,Train_gene,train_ill,test_ill,entid2data):
         torch.cuda.empty_cache()
         print("Epoch {}: loss {:.3f}, using time {:.3f}".format(epoch,epoch_loss,epoch_train_time))
         if epoch >= 0:
-            if epoch !=0:
-                save(Model,train_ill,test_ill,entid2data,epoch)
-            # test(Model,train_ill,entid2data,TEST_BATCH_SIZE,context="EVAL IN TRAIN SET")
+            # if epoch !=0:
+            save(Model,train_ill,test_ill,entid2data,epoch)
+            test(Model,train_ill,entid2data,TEST_BATCH_SIZE,context="EVAL IN TRAIN SET")
             test(Model, test_ill, entid2data, TEST_BATCH_SIZE, context="EVAL IN TEST SET:")
 
     return Model

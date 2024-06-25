@@ -97,7 +97,8 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, ground_truth_path=None, 
         kgs.util.reset_ent_align_prob(lambda x: reset_weight * x)
 
     entity_alignments = list(map(lambda x: (x[0].name, x[1].name, x[2]), kgs.get_all_counterpart_and_prob()))
-    alignment_state = embed_module.step(kgs.kg_l, kgs.kg_r, AlignmentState(entity_alignments=entity_alignments))
+    # entity_alignments, _ = kgs.util.generate_input_for_embed_align(link_path=ground_truth_path)
+    alignment_state = embed_module.step(kgs.kg_l, kgs.kg_r, AlignmentState(entity_alignments=list(entity_alignments)))
 
     # mapping feedback
     if load_ent is True:
@@ -111,6 +112,9 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, ground_truth_path=None, 
 
     # set the function balancing the probability (from PARIS) and the embedding similarity
     kgs.set_fusion_func(prase_func)
+    
+    # test once directly after applying embedding module
+    kgs.util.test(path=ground_truth_path, threshold=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
     kgs.run(test_path=ground_truth_path)
 
 
@@ -122,12 +126,12 @@ def get_embedding_module():
     #     mapping_r_path=os.path.join(embed_output_path, "kg2_ent_ids")
     # )
     embedding_module = BertIntModule(
-        # des_dict_path="model/bert_int/data/dbp15k/2016-10-des_dict",
-        description_name_1="http://purl.org/dc/elements/1.1/description",
-        description_name_2="http://schema.org/description",
+        des_dict_path="model/bert_int/data/dbp15k/2016-10-des_dict",
+        # description_name_1="http://purl.org/dc/elements/1.1/description",
+        # description_name_2="http://schema.org/description",
         # model_path="model/bert_int/Save_model/DBP15K_jaenmodel_epoch_4.p",
         interaction_model=False,
-        alignment_threshold=0.999999
+        training_max_percentage=0.3,
     )
     # embedding_module = DummyModule()
 
@@ -151,7 +155,7 @@ def main():
     kgs.set_worker_num(10)
 
     # set the iteration number of PARIS
-    kgs.set_iteration(10)
+    kgs.set_iteration(1)
 
     # ground truth mapping path
     ground_truth_mapping_path = os.path.join(dataset_path, "ent_links")
@@ -168,10 +172,14 @@ def main():
     # embed_module_name = "MultiKE"
     embed_module_name = "BootEA"
     module = get_embedding_module()
+    save_meantime_result(base, dataset_name, kgs, ground_truth_mapping_path, embed_module_name)
     run_prase_iteration(kgs, module, prase_func=fusion_func,
                         ground_truth_path=ground_truth_mapping_path)
 
     # in the following, we store the mappings and check point files
+    save_meantime_result(base, dataset_name, kgs, ground_truth_mapping_path, embed_module_name)
+
+def save_meantime_result(base, dataset_name, kgs, ground_truth_mapping_path, embed_module_name):
     save_dir_name = "output"
     save_dir_path = os.path.join(os.path.join(base, save_dir_name), dataset_name)
     if not os.path.exists(save_dir_path):
@@ -180,10 +188,10 @@ def main():
     time_stamp = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 
     # save the check point
-    check_point_dir = os.path.join(save_dir_path, "chk")
-    check_point_name = "PRASE-" + embed_module_name + "@" + time_stamp
-    check_point_file = os.path.join(check_point_dir, check_point_name)
-    kgs.util.save_params(check_point_file)
+    # check_point_dir = os.path.join(save_dir_path, "chk")
+    # check_point_name = "PRASE-" + embed_module_name + "@" + time_stamp
+    # check_point_file = os.path.join(check_point_dir, check_point_name)
+    # kgs.util.save_params(check_point_file)
 
     # save the mapping result
     result_dir = os.path.join(save_dir_path, "mapping")
@@ -195,7 +203,7 @@ def main():
     input_base = os.path.join(save_dir_path, "embed_input")
     input_dir_name = "PRASE-" + embed_module_name + "@" + time_stamp
     input_dir = os.path.join(input_base, input_dir_name)
-    kgs.util.generate_input_for_embed_align(link_path=ground_truth_mapping_path, save_dir=input_dir, threshold=0.1)
+    kgs.util.write_input_for_embed_align(link_path=ground_truth_mapping_path, save_dir=input_dir, threshold=0.1)
 
 
 if __name__ == '__main__':
