@@ -263,7 +263,6 @@ class BertIntModule(Module):
             descriptions_dict = {**descriptions_dict_l, **descriptions_dict_r}
             print(f"DescriptionsDict: {self.__dict_head(descriptions_dict)}")
             print(f"DescriptionsDict: {self.__dict_tail(descriptions_dict)}")
-            exit(0)
             ent2desTokens = ent2desTokens_generateFromDict(Tokenizer, descriptions_dict,
                                                             [index2entity[id] for id in entid_1],
                                                             [index2entity[id] for id in entid_2])

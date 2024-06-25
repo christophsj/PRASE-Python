@@ -137,7 +137,7 @@ def get_embedding_module():
 
 def main():
     base, _ = os.path.split(os.path.abspath(__file__))
-    dataset_name = "D_W_15K_V2"
+    dataset_name = "dbp15k/fr_en/converted"
     dataset_path = os.path.join(os.path.join(base, "data"), dataset_name)
 
     print("Construct KGs...")
