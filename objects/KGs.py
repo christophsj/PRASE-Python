@@ -595,7 +595,7 @@ class KGsUtil:
     def __result_writer(path, result_dict, title):
         with open(path, "a+", encoding="utf-8") as f:
             f.write("--- " + title + " ---\n\n")
-            for ((obj_l, obj_r), prob_set) in result_dict.items():
+            for ((obj_l, obj_r), prob_set) in sorted(result_dict.items(), key=lambda x: x[0][0].name):
                 f.write(obj_l.name + "\t" + obj_r.name + "\t" + "\t".join(format(s, ".6f") for s in prob_set) + "\n")
             f.write("\n")
 

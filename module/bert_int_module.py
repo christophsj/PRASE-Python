@@ -39,6 +39,17 @@ class BertIntModule(Module):
         self.model_path = model_path
         self.interaction_model = interaction_model
         self.result_align_threshold = result_align_threshold
+        
+        logger.info("BertIntModule parameters:")
+        logger.info(f"des_dict_path: {des_dict_path}")
+        logger.info(f"training_threshold: {training_threshold}")
+        logger.info(f"training_max_percentage: {training_max_percentage}")
+        logger.info(f"description_name_1: {description_name_1}")
+        logger.info(f"description_name_2: {description_name_2}")
+        logger.info(f"model_path: {model_path}")
+        logger.info(f"interaction_model: {interaction_model}")
+        logger.info(f"result_align_threshold: {result_align_threshold}")
+        
 
     @staticmethod
     def get_affiliation(kg_l: KG, kg_r: KG, name):
@@ -258,7 +269,7 @@ class BertIntModule(Module):
 
         for e1, e2, prob in sorted(state.entity_alignments, key=lambda x: x[2], reverse=True):
             my_tuple = (entity2index[e1], entity2index[e2])
-            if prob >= self.alignment_threshold and len(train_ill) <= max_train_length:
+            if prob >= self.training_threshhold and len(train_ill) <= max_train_length:
                 train_ill.append(my_tuple)
             else:
                 test_ill.append(my_tuple)
@@ -293,8 +304,8 @@ class BertIntModule(Module):
             descriptions_dict_l = self._build_desc_dict_from_attribute_or_name(kg_l, self.description_name_l)
             descriptions_dict_r = self._build_desc_dict_from_attribute_or_name(kg_r, self.description_name_r)
             descriptions_dict = {**descriptions_dict_l, **descriptions_dict_r}
-            print(f"DescriptionsDict: {self.__dict_head(descriptions_dict)}")
-            print(f"DescriptionsDict: {self.__dict_tail(descriptions_dict)}")
+            logger.info(f"DescriptionsDict: {self.__dict_head(descriptions_dict)}")
+            logger.info(f"DescriptionsDict: {self.__dict_tail(descriptions_dict)}")
             ent2desTokens = ent2desTokens_generateFromDict(Tokenizer, descriptions_dict,
                                                            [index2entity[id] for id in entid_1],
                                                            [index2entity[id] for id in entid_2])

@@ -129,8 +129,8 @@ def get_embedding_module():
         des_dict_path="model/bert_int/data/dbp15k/2016-10-des_dict",
         # description_name_1="http://purl.org/dc/elements/1.1/description",
         # description_name_2="http://schema.org/description",
-        # model_path="model/bert_int/Save_model/DBP15K_jaenmodel_epoch_4.p",
-        interaction_model=False,
+        model_path="../Save_model/DBP15K_frenmodel_epoch_2.p",
+        interaction_model=True,
         training_max_percentage=0.3,
     )
     # embedding_module = DummyModule()
@@ -155,7 +155,7 @@ def main():
     kgs.set_worker_num(10)
 
     # set the iteration number of PARIS
-    kgs.set_iteration(1)
+    kgs.set_iteration(7)
 
     # ground truth mapping path
     ground_truth_mapping_path = os.path.join(dataset_path, "ent_links")
@@ -170,11 +170,11 @@ def main():
     # run PRASE using both the embedding and mapping feedback
 
     # embed_module_name = "MultiKE"
-    embed_module_name = "BootEA"
     module = get_embedding_module()
+    embed_module_name = module.__class__.__name__
     save_meantime_result(base, dataset_name, kgs, ground_truth_mapping_path, embed_module_name)
     run_prase_iteration(kgs, module, prase_func=fusion_func,
-                        ground_truth_path=ground_truth_mapping_path)
+                        ground_truth_path=ground_truth_mapping_path, load_ent=True)
 
     # in the following, we store the mappings and check point files
     save_meantime_result(base, dataset_name, kgs, ground_truth_mapping_path, embed_module_name)

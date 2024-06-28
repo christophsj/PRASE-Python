@@ -1,5 +1,5 @@
 print("In params:")
-LANG = 'ja' #language 'zh'/'ja'/'fr'
+LANG = 'fr' #language 'zh'/'ja'/'fr'
 
 CUDA_NUM = 0 # used GPU num
 MODEL_INPUT_DIM  = 768
@@ -9,12 +9,12 @@ TRAIN_ILL_RATE = 0.3 # (only work when RANDOM_DIVIDE_ILL == True) training data 
 
 SEED_NUM = 11037
 
-EPOCH_NUM = 1 #training epoch num
+EPOCH_NUM = 3 #training epoch num
 
 NEAREST_SAMPLE_NUM = 128
 CANDIDATE_GENERATOR_BATCH_SIZE = 128
 
-TOPK = 50
+TOPK = 10
 NEG_NUM = 2 # negative sample num
 MARGIN = 3 # margin
 LEARNING_RATE = 1e-5 # learning rate

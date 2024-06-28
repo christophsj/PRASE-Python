@@ -13,25 +13,6 @@ entity_embedding: TypeAlias = dict[KG, dict[entity_id, np.ndarray]]
 relation_embedding: TypeAlias = dict[KG, dict[relation_id, np.ndarray]]
 
 
-# class EmbeddingModule:
-
-#     def run_embedding(self, kg1: KG, kg2: KG, alignments: entity_alignments) -> tuple[entity_embeddings, entity_alignments]:
-#         """Run the embedding model. Return the embeddings and the alignments."""
-#         pass
-
-#     def name_to_embedding_idx(self, kg1: KG, kg2: KG) -> dict[str, int]:
-#         """Get the mapping from entity name to entity index."""
-#         pass
-
-
-# class ReasoningModule:
-
-#     def run_reasoning(self, kg1: KG, kg2: KG,
-#                       alignments: entity_alignments | None, embeddings: entity_embeddings | None) -> entity_alignments:
-#         """Get the alignments from the reasoning module."""
-#         pass
-
-
 @dataclass
 class AlignmentState:
     entity_alignments: entity_alignment = field(default_factory=lambda: [])
@@ -43,6 +24,6 @@ class AlignmentState:
 
 class Module:
 
-    def step(self, kg_l, kg_r, state: AlignmentState) -> AlignmentState:
+    def step(self, kg_l: KG, kg_r: KG, state: AlignmentState) -> AlignmentState:
         """Run the module."""
         pass
