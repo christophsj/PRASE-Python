@@ -88,10 +88,11 @@ def run_init_iteration(kgs, ground_truth_path=None):
     kgs.run(test_path=ground_truth_path)
 
 
-def run_prase_iteration(kgs: KGs, embed_module: Module, ground_truth_path=None, load_weight=1.0,
+def run_prase_iteration(kgs: KGs, embed_module: Module, save_dir_path:str, embed_module_name: str, ground_truth_path=None, load_weight=1.0,
                         reset_weight=1.0, load_ent=True,
                         load_emb=True,
                         init_reset=False, prase_func=None):
+    save_meantime_result(save_dir_path, kgs, embed_module_name)
     if init_reset is True:
         # load_weight: scale the mapping probability predicted by the PARIS module if loading PRASE from check point
         kgs.util.reset_ent_align_prob(lambda x: reset_weight * x)
@@ -113,10 +114,12 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, ground_truth_path=None, 
     # set the function balancing the probability (from PARIS) and the embedding similarity
     kgs.set_fusion_func(prase_func)
     
+    # save meantime result before running PARIS again
+    save_meantime_result(save_dir_path, kgs, embed_module_name)
     # test once directly after applying embedding module
     kgs.util.test(path=ground_truth_path, threshold=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
     kgs.run(test_path=ground_truth_path)
-
+    save_meantime_result(save_dir_path, kgs, embed_module_name)
 
 def get_embedding_module():
     # embedding_module = PrecomputedEmbeddingModule(
@@ -172,19 +175,15 @@ def main():
     # embed_module_name = "MultiKE"
     module = get_embedding_module()
     embed_module_name = module.__class__.__name__
-    save_meantime_result(base, dataset_name, kgs, ground_truth_mapping_path, embed_module_name)
-    run_prase_iteration(kgs, module, prase_func=fusion_func,
-                        ground_truth_path=ground_truth_mapping_path, load_ent=True)
-
-    # in the following, we store the mappings and check point files
-    save_meantime_result(base, dataset_name, kgs, ground_truth_mapping_path, embed_module_name)
-
-def save_meantime_result(base, dataset_name, kgs, ground_truth_mapping_path, embed_module_name):
     save_dir_name = "output"
     save_dir_path = os.path.join(os.path.join(base, save_dir_name), dataset_name)
     if not os.path.exists(save_dir_path):
         os.makedirs(save_dir_path)
+        
+    run_prase_iteration(kgs, module, save_dir_path, embed_module_name, prase_func=fusion_func,
+                        ground_truth_path=ground_truth_mapping_path, load_ent=True)
 
+def save_meantime_result(save_dir_path, kgs, embed_module_name):
     time_stamp = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 
     # save the check point
@@ -200,10 +199,10 @@ def save_meantime_result(base, dataset_name, kgs, ground_truth_mapping_path, emb
     kgs.util.save_results(result_file)
 
     # generate the input files (training data) for embedding module
-    input_base = os.path.join(save_dir_path, "embed_input")
-    input_dir_name = "PRASE-" + embed_module_name + "@" + time_stamp
-    input_dir = os.path.join(input_base, input_dir_name)
-    kgs.util.write_input_for_embed_align(link_path=ground_truth_mapping_path, save_dir=input_dir, threshold=0.1)
+    # input_base = os.path.join(save_dir_path, "embed_input")
+    # input_dir_name = "PRASE-" + embed_module_name + "@" + time_stamp
+    # input_dir = os.path.join(input_base, input_dir_name)
+    # kgs.util.write_input_for_embed_align(link_path=ground_truth_mapping_path, save_dir=input_dir, threshold=0.1)
 
 
 if __name__ == '__main__':

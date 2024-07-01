@@ -436,6 +436,11 @@ class KGsUtil:
         self.__result_writer(path, rel_dict, "Relation Alignment")
         self.__result_writer(path, lite_dict, "Literal Alignment")
         self.__result_writer(path, ent_dict, "Entity Alignment")
+        
+        self.__result_writer(path + "_2.txt", attr_dict, "Attribute Alignment", probability=False)
+        self.__result_writer(path + "_2.txt", rel_dict, "Relation Alignment", probability=False)
+        self.__result_writer(path + "_2.txt", lite_dict, "Literal Alignment", probability=False)
+        self.__result_writer(path + "_2.txt", ent_dict, "Entity Alignment", probability=False)
         return
 
     def save_params(self, path="output/EA_Params"):
@@ -592,11 +597,11 @@ class KGsUtil:
             kg.init_ent_embeddings()
 
     @staticmethod
-    def __result_writer(path, result_dict, title):
+    def __result_writer(path, result_dict, title, probability=True):
         with open(path, "a+", encoding="utf-8") as f:
             f.write("--- " + title + " ---\n\n")
-            for ((obj_l, obj_r), prob_set) in sorted(result_dict.items(), key=lambda x: x[0][0].name):
-                f.write(obj_l.name + "\t" + obj_r.name + "\t" + "\t".join(format(s, ".6f") for s in prob_set) + "\n")
+            for ((obj_l, obj_r), prob_set) in sorted(result_dict.items(), key=lambda x: (x[0][0].name, x[0][1].name)):
+                f.write(obj_l.name + "\t" + obj_r.name + "\t" + ("\t".join(format(s, ".6f") for s in prob_set) if probability else "") + "\n")
             f.write("\n")
 
     @staticmethod
