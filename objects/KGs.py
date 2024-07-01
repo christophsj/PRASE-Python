@@ -323,6 +323,7 @@ class KGsUtil:
         else:
             threshold_list = threshold
 
+
         for threshold_item in threshold_list:
             ent_align_result = set()
             for ent_id in self.kgs.kg_l.ent_id_list:
@@ -331,6 +332,13 @@ class KGsUtil:
                     prob = self.kgs.sub_ent_prob[ent_id]
                     if prob < threshold_item:
                         continue
+                    
+                    if self.kgs.kg_l.test_entity_names is not None and ent_id not in self.kgs.kg_l.test_entity_names:
+                        continue
+                    
+                    if self.kgs.kg_r.test_entity_names is not None and counterpart_id not in self.kgs.kg_r.test_entity_names:
+                        continue
+                    
                     ent_align_result.add((ent_id, counterpart_id))
 
             correct_num = len(gold_result & ent_align_result)

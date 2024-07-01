@@ -42,6 +42,7 @@ class KG:
         self.is_literal_list = list()
 
         self.ent_embeddings = None
+        self.test_entity_names = None
 
         self.__init()
         self._init = False
@@ -286,3 +287,6 @@ class KG:
         functionality_printer(True, True, func_num)
         functionality_printer(False, False, func_num)
         functionality_printer(False, True, func_num)
+        
+    def set_entity_test_names(self, test_entity_names: set):
+        self.test_entity_names = test_entity_names
