@@ -440,14 +440,14 @@ class KGsUtil:
             os.makedirs(base)
         if os.path.exists(path):
             os.remove(path)
-        self.__result_writer(path, attr_dict, "Attribute Alignment")
-        self.__result_writer(path, rel_dict, "Relation Alignment")
-        self.__result_writer(path, lite_dict, "Literal Alignment")
+        # self.__result_writer(path, attr_dict, "Attribute Alignment")
+        # self.__result_writer(path, rel_dict, "Relation Alignment")
+        # self.__result_writer(path, lite_dict, "Literal Alignment")
         self.__result_writer(path, ent_dict, "Entity Alignment")
         
-        self.__result_writer(path + "_2.txt", attr_dict, "Attribute Alignment", probability=False)
-        self.__result_writer(path + "_2.txt", rel_dict, "Relation Alignment", probability=False)
-        self.__result_writer(path + "_2.txt", lite_dict, "Literal Alignment", probability=False)
+        # self.__result_writer(path + "_2.txt", attr_dict, "Attribute Alignment", probability=False)
+        # self.__result_writer(path + "_2.txt", rel_dict, "Relation Alignment", probability=False)
+        # elf.__result_writer(path + "_2.txt", lite_dict, "Literal Alignment", probability=False)
         self.__result_writer(path + "_2.txt", ent_dict, "Entity Alignment", probability=False)
         return
 
