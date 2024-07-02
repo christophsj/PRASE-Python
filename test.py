@@ -15,11 +15,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def construct_kg(path_r, path_a=None, sep='\t', name=None, test_entity_path: str = None):
+def construct_kg(path_r, path_a=None, sep='\t', name=None):
     kg = KG(name=name)
-    if test_entity_path is not None:
-        with open(test_entity_path, "r", encoding="utf-8") as f:
-            kg.set_entity_test_names(set(map(lambda x: x.strip(), f.readlines())))
                 
     if path_a is not None:
         with open(path_r, "r", encoding="utf-8") as f:
@@ -73,12 +70,9 @@ def construct_kgs(dataset_dir, name="KGs", load_chk=None):
 
     path_r_2 = os.path.join(dataset_dir, "rel_triples_2")
     path_a_2 = os.path.join(dataset_dir, "attr_triples_2")
-    
-    test_entity_path_1 = os.path.join(dataset_dir, "ent_ids_1")
-    test_entity_path_2 = os.path.join(dataset_dir, "ent_ids_2")
 
-    kg1 = construct_kg(path_r_1, path_a_1, name=str(name + "-KG1"), test_entity_path=test_entity_path_1)
-    kg2 = construct_kg(path_r_2, path_a_2, name=str(name + "-KG2"), test_entity_path=test_entity_path_2)
+    kg1 = construct_kg(path_r_1, path_a_1, name=str(name + "-KG1"))
+    kg2 = construct_kg(path_r_2, path_a_2, name=str(name + "-KG2"))
     
     kgs = KGs(kg1=kg1, kg2=kg2)
     # load the previously saved PRASE model

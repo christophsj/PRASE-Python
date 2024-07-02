@@ -333,12 +333,6 @@ class KGsUtil:
                     if prob < threshold_item:
                         continue
                     
-                    if self.kgs.kg_l.test_entity_names is not None and ent_id not in self.kgs.kg_l.test_entity_names:
-                        continue
-                    
-                    if self.kgs.kg_r.test_entity_names is not None and counterpart_id not in self.kgs.kg_r.test_entity_names:
-                        continue
-                    
                     ent_align_result.add((ent_id, counterpart_id))
 
             correct_num = len(gold_result & ent_align_result)

@@ -167,7 +167,8 @@ class BertIntModule(Module):
             with open(f"{self.debug_file_output}/e1_to_e2_dict.csv", "w") as f:
                 for e1, candidate_list in e1_to_e2_dict.items():
                     candidate_list_name = list(map(lambda x: f"{bert_int_data.index2entity[x[0]]}:{x[1]}", candidate_list))
-                    f.write(f"{bert_int_data.index2entity[e1]}\t{"\t".join(candidate_list_name)}\n")
+                    candidate_list_name_joined = "\t".join(candidate_list_name)
+                    f.write(f"{bert_int_data.index2entity[e1]}\t{candidate_list_name_joined}\n")
 
         count = 0
         entity_pairs_by_name = []
