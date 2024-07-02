@@ -94,7 +94,7 @@ def one_step_train(Model, Optimizer, Criterion, Train_gene, f_emb, cuda_num):
 
 
 def test(Model, test_candidate, test_ill, entpair2f_idx, f_emb, batch_size, cuda_num, test_topk)\
-        -> dict[int, list[int, float, int]]:
+        -> dict[int, list[tuple[int, float, int]]]:
     test_ill_set = set(test_ill)
     test_pairs = []#all candidate entity pairs of Test set.
     for e1 in [a for a, b in test_ill]:

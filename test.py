@@ -123,13 +123,16 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, save_dir_path:str, embed
     kgs.set_fusion_func(prase_func)
     
     # save meantime result before running PARIS again
-    save_meantime_result(save_dir_path, kgs, embed_module_name)
+    # save_meantime_result(save_dir_path, kgs, embed_module_name)
+    
     # test once directly after applying embedding module
     kgs.util.test(path=ground_truth_path, threshold=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
-    kgs.run(test_path=ground_truth_path)
+    
+    # for now, skip second PARIS run
+    # kgs.run(test_path=ground_truth_path)
     save_meantime_result(save_dir_path, kgs, embed_module_name)
 
-def get_embedding_module():
+def get_embedding_module(save_dir_path: str):
     # embedding_module = PrecomputedEmbeddingModule(
     #     alignments_path=os.path.join(embed_output_path, "alignment_results_12"),
     #     embeddings_path=os.path.join(embed_output_path, "ent_embeds.npy"),
@@ -143,6 +146,7 @@ def get_embedding_module():
         model_path="../Save_model/DBP15K_frenmodel_epoch_2.p",
         interaction_model=True,
         training_max_percentage=0.3,
+        debug_file_output=save_dir_path + "/bert_int",
     )
     # embedding_module = DummyModule()
 
@@ -180,13 +184,14 @@ def main():
 
     # run PRASE using both the embedding and mapping feedback
 
-    # embed_module_name = "MultiKE"
-    module = get_embedding_module()
-    embed_module_name = module.__class__.__name__
     save_dir_name = "output"
     save_dir_path = os.path.join(os.path.join(base, save_dir_name), dataset_name)
     if not os.path.exists(save_dir_path):
         os.makedirs(save_dir_path)
+        
+    # embed_module_name = "MultiKE"
+    module = get_embedding_module(save_dir_path)
+    embed_module_name = module.__class__.__name__
         
     run_prase_iteration(kgs, module, save_dir_path, embed_module_name, prase_func=fusion_func,
                         ground_truth_path=ground_truth_mapping_path, load_ent=True)
