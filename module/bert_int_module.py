@@ -124,7 +124,7 @@ class BertIntModule(Module):
 
     @staticmethod
     def __take_max_candidate(scores: list[str, float, int]) -> tuple[int, float]:
-        max_score = 0
+        max_score = float("-inf")
         result_entity = None
         for e2, score, _ in scores:
             if score > max_score:
@@ -183,8 +183,18 @@ class BertIntModule(Module):
                 entity_pairs_by_name.append((bert_int_data.index2entity[e1], bert_int_data.index2entity[e2], score))
             else:
                 count = count + 1
+                logger.warning(f"{bert_int_data.index2entity[e1]} without candidate")
+                
+                if len(candidate_list) > 0:
+                    logger.warning(f"{candidate_list}")
 
         logger.warning(f"{count} times without candidate")
+        
+        if self.debug_file_output_dir is not None:
+            with open(f"{self.debug_file_output_dir}/entity_pairs_by_name.csv", "w") as f:
+                for e1, e2, score in sorted(entity_pairs_by_name, key=lambda x: x[2], reverse=True):
+                    f.write(f"{e1}\t{e2}\t{score}\n")
+        
         return bert_int_data, ent_emb_dict, entity_pairs_by_name
 
     def __ent_emb_to_dict(self, kg1, kg2, bert_int_data, ent_emb):
