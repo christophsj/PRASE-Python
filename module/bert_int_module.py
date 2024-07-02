@@ -30,7 +30,7 @@ logger = logging.getLogger()
 class BertIntModule(Module):
 
     def __init__(self, des_dict_path: str | None = None, description_name_1: str = None, description_name_2: str = None,
-                 training_threshold: float = 0.8, training_max_percentage: float = 0.5, result_align_threshold = 0.9, 
+                 training_threshold: float = 0.8, training_max_percentage: float = 0.5, result_align_threshold = 0.1, 
                  model_path=None, interaction_model=True, debug_file_output_dir = None):
         self.des_dict_path = des_dict_path
         self.training_threshhold = training_threshold
@@ -170,7 +170,7 @@ class BertIntModule(Module):
         
         if self.debug_file_output_dir is not None:
             with open(f"{self.debug_file_output_dir}/e1_to_e2_dict.csv", "w") as f:
-                for e1, candidate_list in e1_to_e2_dict.items():
+                for e1, candidate_list in sorted(e1_to_e2_dict.items(), key=lambda x: bert_int_data.index2entity[x[0]]):
                     candidate_list_name = list(map(lambda x: f"{bert_int_data.index2entity[x[0]]}:{x[1]}", candidate_list))
                     candidate_list_name_joined = "\t".join(candidate_list_name)
                     f.write(f"{bert_int_data.index2entity[e1]}\t{candidate_list_name_joined}\n")
@@ -283,12 +283,12 @@ class BertIntModule(Module):
         max_train_length = len(state.entity_alignments) * self.training_max_percentage
 
         for e1, e2, prob in sorted(state.entity_alignments, key=lambda x: x[2], reverse=True):
-            my_tuple = (entity2index[e1], entity2index[e2])
-            if prob >= self.training_threshhold and len(train_ill) <= max_train_length:
+            my_tuple = (entity2index[e1] if e1 is not None else None, entity2index[e2] if e2 is not None else None)
+            if prob >= self.training_threshhold and len(train_ill) <= max_train_length and all(my_tuple):
                 train_ill.append(my_tuple)
             else:
                 test_ill.append(my_tuple)
-
+        
         ent_ill = []
         ent_ill.extend(train_ill)
         ent_ill.extend(test_ill)

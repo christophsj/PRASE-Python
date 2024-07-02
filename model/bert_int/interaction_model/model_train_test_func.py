@@ -98,7 +98,7 @@ def test(Model, test_candidate, test_ill, entpair2f_idx, f_emb, batch_size, cuda
     test_ill_set = set(test_ill)
     test_pairs = []#all candidate entity pairs of Test set.
     for e1 in [a for a, b in test_ill]:
-        for e2 in test_candidate[e1]:
+        for e2 in test_candidate[e1] if e1 is not None else []:
             test_pairs.append((e1, e2))
     isin_test_ill_set_num = sum([pair in test_ill_set for pair in test_pairs])
     print("all test entity pair num {}/ max align entity pair num: {}".format(len(test_pairs), isin_test_ill_set_num))

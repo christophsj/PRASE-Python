@@ -100,10 +100,10 @@ def main(Model, train_ill, test_ill, eid2data):
 
     # Generate candidates(likely to be aligned) for entities in train_set/test_set
     # we apply interaction model to infer a matching score on candidates.
-    test_ids_1 = [e1 for e1, e2 in test_ill]
-    test_ids_2 = [e2 for e1, e2 in test_ill]
-    train_ids_1 = [e1 for e1, e2 in train_ill]
-    train_ids_2 = [e2 for e1, e2 in train_ill]
+    test_ids_1 = [e1 for e1, e2 in test_ill if e1 is not None]
+    test_ids_2 = [e2 for e1, e2 in test_ill if e2 is not None]
+    train_ids_1 = [e1 for e1, e2 in train_ill if e1 is not None]
+    train_ids_2 = [e2 for e1, e2 in train_ill if e2 is not None]
     train_candidates, train_cands_with_score = candidate_generate(train_ids_1, train_ids_2, ent_emb, CANDIDATE_NUM, bs=2048, cuda_num=CUDA_NUM)
     test_candidates, test_cands_with_score = candidate_generate(test_ids_1, test_ids_2, ent_emb, CANDIDATE_NUM, bs=2048, cuda_num=CUDA_NUM)
     # pickle.dump(train_candidates, open(TRAIN_CANDIDATES_PATH, "wb"))

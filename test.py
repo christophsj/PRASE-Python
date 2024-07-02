@@ -89,6 +89,12 @@ def fusion_func(prob, x, y):
 def run_init_iteration(kgs, ground_truth_path=None):
     kgs.run(test_path=ground_truth_path)
 
+def transform_entity_alignment(entity_alignment: tuple):
+    return (
+        entity_alignment[0].name if entity_alignment[0] is not None else None,
+        entity_alignment[1].name if entity_alignment[1] is not None else None,
+        entity_alignment[2]
+    )
 
 def run_prase_iteration(kgs: KGs, embed_module: Module, save_dir_path:str, embed_module_name: str, ground_truth_path=None, load_weight=1.0,
                         reset_weight=1.0, load_ent=True,
@@ -99,7 +105,7 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, save_dir_path:str, embed
         # load_weight: scale the mapping probability predicted by the PARIS module if loading PRASE from check point
         kgs.util.reset_ent_align_prob(lambda x: reset_weight * x)
 
-    entity_alignments = list(map(lambda x: (x[0].name, x[1].name, x[2]), kgs.get_all_counterpart_and_prob()))
+    entity_alignments = list(map(transform_entity_alignment, kgs.get_all_counterpart_and_prob()))
     # entity_alignments, _ = kgs.util.generate_input_for_embed_align(link_path=ground_truth_path)
     alignment_state = embed_module.step(kgs.kg_l, kgs.kg_r, AlignmentState(entity_alignments=list(entity_alignments)))
 

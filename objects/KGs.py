@@ -78,6 +78,11 @@ class KGs:
             counterpart, prob = self.__get_counterpart_and_prob(ent)
             if counterpart is not None:
                 ent_list.add(self.ordered_triple((ent, counterpart, prob)))
+            else:
+                if ent.affiliation is self.kg_l:
+                    ent_list.add((ent, None, 0.0))
+                else:
+                    ent_list.add((None, ent, 0.0))
                 
         return ent_list
     

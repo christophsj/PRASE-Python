@@ -7,8 +7,8 @@ from objects.KG import KG
 entity_id: TypeAlias = str
 relation_id: TypeAlias = str
 confidence: TypeAlias = float
-entity_alignment: TypeAlias = list[tuple[entity_id, entity_id, confidence]]
-relation_alignment: TypeAlias = list[tuple[relation_id, relation_id, confidence]]
+entity_alignment: TypeAlias = list[tuple[entity_id | None, entity_id | None, confidence]]
+relation_alignment: TypeAlias = list[tuple[relation_id | None, relation_id | None, confidence]]
 entity_embedding: TypeAlias = dict[KG, dict[entity_id, np.ndarray]]
 relation_embedding: TypeAlias = dict[KG, dict[relation_id, np.ndarray]]
 

@@ -10,8 +10,8 @@ from .dual_aggregation_func import *
 
 
 def test_read_emb(ent_emb, train_ill, test_ill, bs=128, candidate_topk=50):
-    test_ids_1 = [e1 for e1, e2 in test_ill]
-    test_ids_2 = [e2 for e1, e2 in test_ill]
+    test_ids_1 = [e1 for e1, e2 in test_ill if e1 is not None]
+    test_ids_2 = [e2 for e1, e2 in test_ill if e2 is not None]
     test_emb1 = np.array(ent_emb)[test_ids_1].tolist()
     test_emb2 = np.array(ent_emb)[test_ids_2].tolist()
     train_ids_1 = [e1 for e1, e2 in train_ill]
