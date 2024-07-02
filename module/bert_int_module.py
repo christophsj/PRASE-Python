@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 
 import torch
@@ -30,7 +31,7 @@ class BertIntModule(Module):
 
     def __init__(self, des_dict_path: str | None = None, description_name_1: str = None, description_name_2: str = None,
                  training_threshold: float = 0.8, training_max_percentage: float = 0.5, result_align_threshold = 0.9, 
-                 model_path=None, interaction_model=True, debug_file_output = None):
+                 model_path=None, interaction_model=True, debug_file_output_dir = None):
         self.des_dict_path = des_dict_path
         self.training_threshhold = training_threshold
         self.training_max_percentage = training_max_percentage
@@ -39,7 +40,11 @@ class BertIntModule(Module):
         self.model_path = model_path
         self.interaction_model = interaction_model
         self.result_align_threshold = result_align_threshold
-        self.debug_file_output = debug_file_output
+        self.debug_file_output_dir = debug_file_output_dir
+        
+        if debug_file_output_dir is not None:
+            os.makedirs(debug_file_output_dir, exist_ok=True)
+            
         
         logger.info("BertIntModule parameters:")
         logger.info(f"des_dict_path: {des_dict_path}")
@@ -50,7 +55,7 @@ class BertIntModule(Module):
         logger.info(f"model_path: {model_path}")
         logger.info(f"interaction_model: {interaction_model}")
         logger.info(f"result_align_threshold: {result_align_threshold}")
-        logger.info(f"debug_file_output: {debug_file_output}")
+        logger.info(f"debug_file_output: {debug_file_output_dir}")
         
 
     @staticmethod
@@ -163,8 +168,8 @@ class BertIntModule(Module):
             train_candidate=train_candidates,
         )
         
-        if self.debug_file_output is not None:
-            with open(f"{self.debug_file_output}/e1_to_e2_dict.csv", "w") as f:
+        if self.debug_file_output_dir is not None:
+            with open(f"{self.debug_file_output_dir}/e1_to_e2_dict.csv", "w") as f:
                 for e1, candidate_list in e1_to_e2_dict.items():
                     candidate_list_name = list(map(lambda x: f"{bert_int_data.index2entity[x[0]]}:{x[1]}", candidate_list))
                     candidate_list_name_joined = "\t".join(candidate_list_name)

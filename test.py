@@ -140,7 +140,7 @@ def get_embedding_module(save_dir_path: str):
         model_path="../Save_model/DBP15K_frenmodel_epoch_2.p",
         interaction_model=True,
         training_max_percentage=0.3,
-        debug_file_output=save_dir_path + "/bert_int",
+        debug_file_output_dir=save_dir_path + "/bert_int",
     )
     # embedding_module = DummyModule()
 
