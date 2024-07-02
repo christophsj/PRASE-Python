@@ -45,7 +45,7 @@ def interaction_model(bert_int_data: BertIntInput, entity_pairs, nei_features, a
     Criterion = nn.MarginRankingLoss(margin=MARGIN, size_average=True)
 
     #train
-    e1_to_e2_dict = train(Model, Optimizer, Criterion, Train_gene, all_features, test_candidate, test_ill,
+    e1_to_e2_dict = train(Model, Optimizer, Criterion, Train_gene, all_features, test_candidate, test_ill, train_candidate, train_ill,
           entpair2f_idx, epoch_num=EPOCH_NUM, eval_num=10, cuda_num=cuda_num, test_topk=50)
 
     #save

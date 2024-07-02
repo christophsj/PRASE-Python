@@ -153,7 +153,7 @@ def test(Model, test_candidate, test_ill, entpair2f_idx, f_emb, batch_size, cuda
     return e1_to_e2andscores
 
 
-def train(Model, Optimizer, Criterion, Train_gene, f_emb_list, test_candidate, test_ill,
+def train(Model, Optimizer, Criterion, Train_gene, f_emb_list, test_candidate, test_ill, train_candidate, train_ill,
           entpair2f_idx, epoch_num, eval_num, cuda_num, test_topk):
     feature_emb = torch.FloatTensor(f_emb_list)
     print("start training interaction model!")
@@ -165,6 +165,8 @@ def train(Model, Optimizer, Criterion, Train_gene, f_emb_list, test_candidate, t
         if (epoch + 1) % eval_num == 0 and epoch != 0 :
             start_time = time.time()
             e1_to_e2_dict = test(Model, test_candidate, test_ill, entpair2f_idx, feature_emb, 2048, cuda_num, test_topk)
+            
             print("test using time {:.3f}".format(time.time() - start_time))
 
-    return e1_to_e2_dict
+    e1_to_e2_dict_train = test(Model, train_candidate, train_ill, entpair2f_idx, feature_emb, 2048, cuda_num, test_topk)
+    return {**e1_to_e2_dict, **e1_to_e2_dict_train}
