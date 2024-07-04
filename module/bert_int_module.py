@@ -30,7 +30,7 @@ logger = logging.getLogger()
 class BertIntModule(Module):
 
     def __init__(self, des_dict_path: str | None = None, description_name_1: str = None, description_name_2: str = None,
-                 training_threshold: float = 0.8, training_max_percentage: float = 0.5, result_align_threshold = 0.1, 
+                 training_threshold: float = 0.8, training_max_percentage: float = 0.5, result_align_threshold = float("-inf"), 
                  model_path=None, interaction_model=True, debug_file_output_dir = None):
         self.des_dict_path = des_dict_path
         self.training_threshhold = training_threshold
@@ -108,6 +108,8 @@ class BertIntModule(Module):
             entity_pairs_merged_dict[e1] = (e2, prob)
 
         for e1, e2, prob in entity_pairs:
+            if e1 is None or e2 is None:
+                continue
             if e1 not in new_entity_pairs_dict and prob >= self.result_align_threshold:
                 entity_pairs_merged_dict[e1] = (e2, prob)
 
@@ -298,6 +300,11 @@ class BertIntModule(Module):
                 train_ill.append(my_tuple)
             else:
                 test_ill.append(my_tuple)
+                
+        if self.debug_file_output_dir:
+            with open(f"{self.debug_file_output_dir}/train_ill.csv", "w") as f:
+                for e1, e2 in train_ill:
+                    f.write(f"{index2entity[e1]}\t{index2entity[e2]}\n")
         
         ent_ill = []
         ent_ill.extend(train_ill)
