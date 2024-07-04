@@ -143,10 +143,10 @@ def get_embedding_module(save_dir_path: str, dataset_name: str):
         des_dict_path="model/bert_int/data/dbp15k/2016-10-des_dict",
         # description_name_1="http://purl.org/dc/elements/1.1/description",
         # description_name_2="http://schema.org/description",
-        model_path="../Save_model/DBP15K_frenmodel_epoch_2.p",
+        # model_path="../Save_model/DBP15K_frenmodel_epoch_2.p",
         interaction_model=True,
         training_max_percentage=0.3,
-        debug_file_output_dir=save_dir_path + "/bert_int",
+        debug_file_output_dir=save_dir_path + os.path.join("/bert_int", dataset_name),
         dataset_name=dataset_name
     )
     # embedding_module = DummyModule()
@@ -157,7 +157,7 @@ def get_embedding_module(save_dir_path: str, dataset_name: str):
 
 def main():
     base, _ = os.path.split(os.path.abspath(__file__))
-    dataset_name = "dbp15k/fr_en/converted"
+    dataset_name = "dbp15k/ja_en/converted"
     dataset_path = os.path.join(os.path.join(base, "data"), dataset_name)
 
     print("Construct KGs...")

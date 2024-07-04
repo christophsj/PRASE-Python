@@ -52,8 +52,8 @@ def train_basic_bert(bert_int_data: BertIntInput, dataset_name: str) -> nn.Modul
     Criterion = nn.MarginRankingLoss(MARGIN, size_average=True)
     Optimizer = AdamW(Model.parameters(), lr=LEARNING_RATE)
 
-    ent1 = [e1 for e1, e2 in ent_ill]
-    ent2 = [e2 for e1, e2 in ent_ill]
+    ent1 = [e1 for e1, e2 in ent_ill if e1 is not None]
+    ent2 = [e2 for e1, e2 in ent_ill if e2 is not None]
 
     # training data generator(can generate batch-size training data)
     Train_gene = Batch_TrainData_Generator(train_ill, ent1, ent2, index2entity, batch_size=TRAIN_BATCH_SIZE,

@@ -103,8 +103,8 @@ def train(Model,Criterion,Optimizer,Train_gene,train_ill,test_ill,entid2data,dat
         print("+++++++++++")
         #generate candidate_dict
         #(candidate_dict is used to generate negative example for train_ILL)
-        train_ent1s = [e1 for e1,e2 in train_ill]
-        train_ent2s = [e2 for e1,e2 in train_ill]
+        train_ent1s = [e1 for e1,e2 in train_ill if e1 is not None]
+        train_ent2s = [e2 for e1,e2 in train_ill if e2 is not None]
         for_candidate_ent1s = Train_gene.ent_ids1
         for_candidate_ent2s = Train_gene.ent_ids2
         print("train ent1s num: {} train ent2s num: {} for_Candidate_ent1s num: {} for_candidate_ent2s num: {}"
@@ -133,8 +133,8 @@ def test(Model,ent_ill,entid2data,batch_size,context = ""):
     print(context)
     Model.eval()
     with torch.no_grad():
-        ents_1 = [e1 for e1,e2 in ent_ill]
-        ents_2 = [e2 for e1,e2 in ent_ill]
+        ents_1 = [e1 for e1,e2 in ent_ill if e1 is not None]
+        ents_2 = [e2 for e1,e2 in ent_ill if e2 is not None]
 
         emb1 = []
         for i in range(0,len(ents_1),batch_size):
@@ -159,9 +159,11 @@ def test(Model,ent_ill,entid2data,batch_size,context = ""):
 
 
 def save(Model,epoch_num,dataset_name):
-    print("Model {} save in: ".format(epoch_num), MODEL_SAVE_PATH + dataset_name + "_model_epoch_" + str(epoch_num) + '.p')
+    model_path = MODEL_SAVE_PATH + dataset_name + "_model_epoch_" + str(epoch_num) + '.p'
+    print("Model {} save in: ".format(epoch_num), model_path)
     Model.eval()
-    torch.save(Model.state_dict(),MODEL_SAVE_PATH + dataset_name + "_model_epoch_" + str(epoch_num) + '.p')
+    os.makedirs(os.path.dirname(model_path),exist_ok=True)
+    torch.save(Model.state_dict(),model_path)
     # other_data = [train_ill,test_ill,entid2data]
     # pickle.dump(other_data,open(MODEL_SAVE_PATH + dataset_name + 'other_data.pkl',"wb"))
     print("Model {} save end.".format(epoch_num))
