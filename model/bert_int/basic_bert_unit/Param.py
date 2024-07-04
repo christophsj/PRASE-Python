@@ -1,5 +1,4 @@
 print("In params:")
-LANG = 'fr' #language 'zh'/'ja'/'fr'
 
 CUDA_NUM = 0 # used GPU num
 MODEL_INPUT_DIM  = 768
@@ -24,10 +23,8 @@ TEST_BATCH_SIZE = 64
 DES_LIMIT_LENGTH = 128 # max length of description/name.
 
 
-DATA_PATH = r"../data/dbp15k/{}_en/".format(LANG)  #data path
 DES_DICT_PATH = r"../data/dbp15k/2016-10-des_dict" #description data path
 MODEL_SAVE_PATH = "../Save_model/"                 #model save path
-MODEL_SAVE_PREFIX = "DBP15K_{}en".format(LANG)
 
 import os
 if not os.path.exists(MODEL_SAVE_PATH):

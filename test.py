@@ -132,7 +132,7 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, save_dir_path:str, embed
     # kgs.run(test_path=ground_truth_path)
     save_meantime_result(save_dir_path, kgs, embed_module_name)
 
-def get_embedding_module(save_dir_path: str):
+def get_embedding_module(save_dir_path: str, dataset_name: str):
     # embedding_module = PrecomputedEmbeddingModule(
     #     alignments_path=os.path.join(embed_output_path, "alignment_results_12"),
     #     embeddings_path=os.path.join(embed_output_path, "ent_embeds.npy"),
@@ -147,6 +147,7 @@ def get_embedding_module(save_dir_path: str):
         interaction_model=True,
         training_max_percentage=0.3,
         debug_file_output_dir=save_dir_path + "/bert_int",
+        dataset_name=dataset_name
     )
     # embedding_module = DummyModule()
 
@@ -190,7 +191,7 @@ def main():
         os.makedirs(save_dir_path)
         
     # embed_module_name = "MultiKE"
-    module = get_embedding_module(save_dir_path)
+    module = get_embedding_module(save_dir_path, dataset_name)
     embed_module_name = module.__class__.__name__
         
     run_prase_iteration(kgs, module, save_dir_path, embed_module_name, prase_func=fusion_func,

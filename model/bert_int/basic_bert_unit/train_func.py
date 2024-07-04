@@ -95,7 +95,7 @@ def generate_candidate_dict(Model,train_ent1s,train_ent2s,for_candidate_ent1s,fo
 
 
 
-def train(Model,Criterion,Optimizer,Train_gene,train_ill,test_ill,entid2data):
+def train(Model,Criterion,Optimizer,Train_gene,train_ill,test_ill,entid2data,dataset_name):
     print("start training...")
     for epoch in range(EPOCH_NUM):
         print("+++++++++++")
@@ -120,7 +120,7 @@ def train(Model,Criterion,Optimizer,Train_gene,train_ill,test_ill,entid2data):
         print("Epoch {}: loss {:.3f}, using time {:.3f}".format(epoch,epoch_loss,epoch_train_time))
         if epoch >= 0:
             # if epoch !=0:
-            save(Model,train_ill,test_ill,entid2data,epoch)
+            save(Model,epoch,dataset_name)
             test(Model,train_ill,entid2data,TEST_BATCH_SIZE,context="EVAL IN TRAIN SET")
             test(Model, test_ill, entid2data, TEST_BATCH_SIZE, context="EVAL IN TEST SET:")
 
@@ -158,12 +158,12 @@ def test(Model,ent_ill,entid2data,batch_size,context = ""):
     print("--------------------")
 
 
-def save(Model,train_ill,test_ill,entid2data,epoch_num):
-    print("Model {} save in: ".format(epoch_num), MODEL_SAVE_PATH + MODEL_SAVE_PREFIX + "model_epoch_" + str(epoch_num) + '.p')
+def save(Model,epoch_num,dataset_name):
+    print("Model {} save in: ".format(epoch_num), MODEL_SAVE_PATH + dataset_name + "_model_epoch_" + str(epoch_num) + '.p')
     Model.eval()
-    torch.save(Model.state_dict(),MODEL_SAVE_PATH + MODEL_SAVE_PREFIX + "model_epoch_" + str(epoch_num) + '.p')
-    other_data = [train_ill,test_ill,entid2data]
-    pickle.dump(other_data,open(MODEL_SAVE_PATH + MODEL_SAVE_PREFIX + 'other_data.pkl',"wb"))
+    torch.save(Model.state_dict(),MODEL_SAVE_PATH + dataset_name + "_model_epoch_" + str(epoch_num) + '.p')
+    # other_data = [train_ill,test_ill,entid2data]
+    # pickle.dump(other_data,open(MODEL_SAVE_PATH + dataset_name + 'other_data.pkl',"wb"))
     print("Model {} save end.".format(epoch_num))
 
 

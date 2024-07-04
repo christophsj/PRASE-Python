@@ -29,7 +29,7 @@ logger = logging.getLogger()
 
 class BertIntModule(Module):
 
-    def __init__(self, des_dict_path: str | None = None, description_name_1: str = None, description_name_2: str = None,
+    def __init__(self, dataset_name, des_dict_path: str | None = None, description_name_1: str = None, description_name_2: str = None,
                  training_threshold: float = 0.8, training_max_percentage: float = 0.5, result_align_threshold = float("-inf"), 
                  model_path=None, interaction_model=True, debug_file_output_dir = None):
         self.des_dict_path = des_dict_path
@@ -41,12 +41,14 @@ class BertIntModule(Module):
         self.interaction_model = interaction_model
         self.result_align_threshold = result_align_threshold
         self.debug_file_output_dir = debug_file_output_dir
+        self.dataset_name = dataset_name
         
         if debug_file_output_dir is not None:
             os.makedirs(debug_file_output_dir, exist_ok=True)
             
         
         logger.info("BertIntModule parameters:")
+        logger.info(f"dataset_name: {dataset_name}")
         logger.info(f"des_dict_path: {des_dict_path}")
         logger.info(f"training_threshold: {training_threshold}")
         logger.info(f"training_max_percentage: {training_max_percentage}")
@@ -210,7 +212,7 @@ class BertIntModule(Module):
         if self.model_path is not None:
             trained_module = self.__load_model_from_path(self.model_path)
         else:
-            trained_module = train_basic_bert(bert_int_data)
+            trained_module = train_basic_bert(bert_int_data, self.dataset_name)
         ent_emb, entity_pairs, train_candidates, test_candidates = get_entity_embedding_main(trained_module,
                                                                                              bert_int_data.train_ill,
                                                                                              bert_int_data.test_ill,

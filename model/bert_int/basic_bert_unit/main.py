@@ -3,7 +3,6 @@ import torch.nn as nn
 from transformers import AdamW
 import random
 
-from .Read_data_func import read_data
 from .Param import *
 from model.bert_int.Basic_Bert_Unit_model import Basic_Bert_Unit_model
 from .Batch_TrainData_Generator import Batch_TrainData_Generator
@@ -20,7 +19,7 @@ def fixed(seed):
     np.random.seed(seed)
 
 
-def train_basic_bert(bert_int_data: BertIntInput) -> nn.Module:
+def train_basic_bert(bert_int_data: BertIntInput, dataset_name: str) -> nn.Module:
     ent_ill, train_ill, test_ill, index2entity, ent2data = (
         bert_int_data.ent_ill,
         bert_int_data.train_ill,
@@ -60,4 +59,4 @@ def train_basic_bert(bert_int_data: BertIntInput) -> nn.Module:
     Train_gene = Batch_TrainData_Generator(train_ill, ent1, ent2, index2entity, batch_size=TRAIN_BATCH_SIZE,
                                            neg_num=NEG_NUM)
 
-    return train(Model, Criterion, Optimizer, Train_gene, train_ill, test_ill, ent2data)
+    return train(Model, Criterion, Optimizer, Train_gene, train_ill, test_ill, ent2data, dataset_name)
