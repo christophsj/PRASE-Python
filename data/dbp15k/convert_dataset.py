@@ -1,10 +1,15 @@
 import os
-import shutil
+import sys
 import csv
 
 
 def main():
-    input_path = "fr_en/"
+    input_path = sys.argv[1]
+    if input_path[-1] != "/":
+        input_path += "/"
+        
+    lang_1 = input_path.split("_")[0]
+    lang_2 = input_path.split("_")[1].replace("/", "")
     (
         ent_ill,
         train_ill,
@@ -24,7 +29,7 @@ def main():
 
     ent_ill = replace_entity_id_in_pair(ent_ill, index2entity)
 
-    output_path = "fr_en/converted/"
+    output_path = f"{input_path}converted/"
 
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -50,10 +55,10 @@ def main():
             f.write(f"{n}\n")
 
     replace_space_with_tab(
-        input_path + "attr_triples_1", output_path + "attr_triples_1"
+        input_path + f"{lang_1}_att_triples", output_path + "attr_triples_1"
     )
     replace_space_with_tab(
-        input_path + "attr_triples_2", output_path + "attr_triples_2"
+        input_path + f"{lang_2}_att_triples", output_path + "attr_triples_2"
     )
 
 
