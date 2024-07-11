@@ -447,7 +447,7 @@ class KGsUtil:
         # self.__result_writer(path + "_2.txt", attr_dict, "Attribute Alignment", probability=False)
         # self.__result_writer(path + "_2.txt", rel_dict, "Relation Alignment", probability=False)
         # elf.__result_writer(path + "_2.txt", lite_dict, "Literal Alignment", probability=False)
-        self.__result_writer(path + "_2.txt", ent_dict, "Entity Alignment", probability=False)
+        self.__result_writer(path + "_no_probs.txt", ent_dict, "Entity Alignment", probability=False)
         return
 
     def save_params(self, path="output/EA_Params"):

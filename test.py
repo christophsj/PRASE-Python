@@ -128,8 +128,8 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, save_dir_path:str, embed
     # test once directly after applying embedding module
     kgs.util.test(path=ground_truth_path, threshold=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
     
-    # for now, skip second PARIS run
-    # kgs.run(test_path=ground_truth_path)
+    save_meantime_result(save_dir_path, kgs, embed_module_name)
+    kgs.run(test_path=ground_truth_path)
     save_meantime_result(save_dir_path, kgs, embed_module_name)
 
 def get_embedding_module(save_dir_path: str, dataset_name: str):
@@ -157,7 +157,7 @@ def get_embedding_module(save_dir_path: str, dataset_name: str):
 
 def main():
     base, _ = os.path.split(os.path.abspath(__file__))
-    dataset_name = "dbp15k/ja_en/converted"
+    dataset_name = "dbp15k/fr_en/converted"
     dataset_path = os.path.join(os.path.join(base, "data"), dataset_name)
 
     print("Construct KGs...")

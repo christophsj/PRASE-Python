@@ -66,7 +66,7 @@ class BertIntModule(Module):
             return kg_l
 
         if name in kg_r.entity_dict_by_name:
-            return kg_l
+            return kg_r
 
         raise Exception(f"{name} not found in either KG!")
 
@@ -91,10 +91,10 @@ class BertIntModule(Module):
                                                x[2]),
                                     entity_pairs))
 
-        new_pairs = self.__merge_entity_pairs_by_higher_prob(state.entity_alignments, entity_pairs)
+        new_pairs = self.__merge_entity_pairs(state.entity_alignments, entity_pairs)
         return AlignmentState(entity_embeddings=ent_emb_dict, entity_alignments=new_pairs)
 
-    def __merge_entity_pairs_by_higher_prob(self, entity_pairs: list[tuple[str, str, float]],
+    def __merge_entity_pairs(self, entity_pairs: list[tuple[str, str, float]],
                                             new_entity_pairs: list[tuple[str, str, float]]):
         entity_pairs_dict = self.__entity_pairs_to_dict(entity_pairs)
         new_entity_pairs_dict = self.__entity_pairs_to_dict(new_entity_pairs)
@@ -107,7 +107,12 @@ class BertIntModule(Module):
             # else:
             #     if prob > entity_pairs_dict[e1][1] and prob > entity_pairs_merged_dict.get(e1, (None, 0))[1]:
             #         entity_pairs_merged_dict[e1] = (e2, prob)
-            entity_pairs_merged_dict[e1] = (e2, prob)
+            
+            previous_prob = entity_pairs_dict.get(e1, (None, 0))[1]
+            new_prob = previous_prob + prob
+            new_prob = min(new_prob, 1.0)
+            new_prob = max(new_prob, 0.0)
+            entity_pairs_merged_dict[e1] = (e2, new_prob)
 
         for e1, e2, prob in entity_pairs:
             if e1 is None or e2 is None:
@@ -196,7 +201,7 @@ class BertIntModule(Module):
         
         if self.debug_file_output_dir is not None:
             with open(f"{self.debug_file_output_dir}/entity_pairs_by_name.csv", "w") as f:
-                for e1, e2, score in sorted(entity_pairs_by_name, key=lambda x: x[2], reverse=True):
+                for e1, e2, score in sorted(entity_pairs_by_name, key=lambda x: (x[0], x[1]), reverse=True):
                     f.write(f"{e1}\t{e2}\t{score}\n")
         
         return bert_int_data, ent_emb_dict, entity_pairs_by_name
