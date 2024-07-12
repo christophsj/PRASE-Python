@@ -19,23 +19,29 @@ def get_name(string):
 
 
 def ent2desTokens_generate(
-    Tokenizer, des_dict_path, ent_list_1, ent_list_2, des_limit=DES_LIMIT_LENGTH - 2
+    Tokenizer, des_dict_path, ent_list_1, ent_list_2, des_limit=DES_LIMIT_LENGTH - 2, debug_file = None
 ):
     # ent_list_1/2 == two different language ent list
     print("load desription data from... :", des_dict_path)
     # print current dir
     ori_des_dict = pickle.load(open(des_dict_path, "rb"))
     return ent2desTokens_generateFromDict(
-        Tokenizer, ori_des_dict, ent_list_1, ent_list_2, des_limit
+        Tokenizer, ori_des_dict, ent_list_1, ent_list_2, des_limit, debug_file
     )
 
 
 def ent2desTokens_generateFromDict(
-    Tokenizer, ori_des_dict, ent_list_1, ent_list_2, des_limit=DES_LIMIT_LENGTH - 2
+    Tokenizer, ori_des_dict, ent_list_1, ent_list_2, des_limit=DES_LIMIT_LENGTH - 2, debug_file = None
 ):
     ent2desTokens = dict()
     ent_set_1 = set(ent_list_1)
     ent_set_2 = set(ent_list_2)
+    
+    if debug_file != None:
+        with open(debug_file, "w") as f:
+            for ent, ori_des in ori_des_dict.items():
+                f.write(f"{ent}\t{ori_des}\n")
+    
     for ent, ori_des in ori_des_dict.items():
         if ent not in ent_set_1 and ent not in ent_set_2:
             continue

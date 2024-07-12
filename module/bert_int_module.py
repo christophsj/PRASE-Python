@@ -201,7 +201,7 @@ class BertIntModule(Module):
         
         if self.debug_file_output_dir is not None:
             with open(f"{self.debug_file_output_dir}/entity_pairs_by_name.csv", "w") as f:
-                for e1, e2, score in sorted(entity_pairs_by_name, key=lambda x: (x[0], x[1]), reverse=True):
+                for e1, e2, score in sorted(entity_pairs_by_name, key=lambda x: (x[0], x[1])):
                     f.write(f"{e1}\t{e2}\t{score}\n")
         
         return bert_int_data, ent_emb_dict, entity_pairs_by_name
@@ -338,7 +338,8 @@ class BertIntModule(Module):
         Tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
         if self.des_dict_path != None:
             ent2desTokens = ent2desTokens_generate(Tokenizer, self.des_dict_path, [index2entity[id] for id in entid_1],
-                                                   [index2entity[id] for id in entid_2])
+                                                   [index2entity[id] for id in entid_2], 
+                                                   debug_file=self.debug_file_output_dir + "/ent2desTokens.csv" if self.debug_file_output_dir else None)
         else:
             descriptions_dict_l = self._build_desc_dict_from_attribute_or_name(kg_l, self.description_name_l)
             descriptions_dict_r = self._build_desc_dict_from_attribute_or_name(kg_r, self.description_name_r)
@@ -347,7 +348,8 @@ class BertIntModule(Module):
             logger.info(f"DescriptionsDict: {self.__dict_tail(descriptions_dict)}")
             ent2desTokens = ent2desTokens_generateFromDict(Tokenizer, descriptions_dict,
                                                            [index2entity[id] for id in entid_1],
-                                                           [index2entity[id] for id in entid_2])
+                                                           [index2entity[id] for id in entid_2],
+                                                           debug_file=self.debug_file_output_dir + "/ent2desTokens.csv" if self.debug_file_output_dir else None)
         logger.info(f"Ent2DesTokens: {self.__dict_head(ent2desTokens)}")
 
         # ent2basicBertUnit_input.
