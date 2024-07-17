@@ -80,16 +80,30 @@ class BertIntModule(Module):
             v.requires_grad = False
         Model = Model.cuda(CUDA_NUM)
         return Model
+    
+    def __convert_basic_unit_to_final(self, bert_int_data, entity_pairs):
+        entity_pairs_dict = self.__entity_pairs_to_candidate_dict(entity_pairs)
+                
+        if self.debug_file_output_dir is not None:
+            with open(f"{self.debug_file_output_dir}/candidates.csv", "w") as f:
+                for e1, candidate_list in sorted(entity_pairs_dict.items(), key=lambda x: bert_int_data.index2entity[x[0]]):
+                    candidate_list_name = list(map(lambda x: f"{bert_int_data.index2entity[x[0]]}:{x[1]}", candidate_list))
+                    candidate_list_name_joined = "\t".join(candidate_list_name)
+                    f.write(f"{bert_int_data.index2entity[e1]}\t{candidate_list_name_joined}\n")
+            
+        entity_pairs = map(lambda x: (x[0], x[1][0][0], x[1][0][1]), entity_pairs_dict.items())
+        entity_pairs = list(map(lambda x: (bert_int_data.index2entity[x[0]],
+                                            bert_int_data.index2entity[x[1]],
+                                            x[2]),
+                                entity_pairs))
+        return entity_pairs
 
     def step(self, kg1: KG, kg2: KG, state: AlignmentState) -> AlignmentState:
         if self.interaction_model:
             _, ent_emb_dict, entity_pairs = self.run_interaction_model(kg1, kg2, state)
         else:
             bert_int_data, _, _, entity_pairs, ent_emb_dict, _, _ = self.run_basic_unit(kg1, kg2, state)
-            entity_pairs = list(map(lambda x: (bert_int_data.index2entity[x[0]],
-                                               bert_int_data.index2entity[x[1]],
-                                               x[2]),
-                                    entity_pairs))
+            entity_pairs = self.__convert_basic_unit_to_final(bert_int_data, entity_pairs)
 
         new_pairs = self.__merge_entity_pairs(state.entity_alignments, entity_pairs)
         return AlignmentState(entity_embeddings=ent_emb_dict, entity_alignments=new_pairs)
@@ -121,6 +135,18 @@ class BertIntModule(Module):
                 entity_pairs_merged_dict[e1] = (e2, prob)
 
         return list(map(lambda x: (x[0], x[1][0], x[1][1]), entity_pairs_merged_dict.items()))
+
+    @staticmethod
+    def __entity_pairs_to_candidate_dict(entity_pairs: list[tuple[str, str, float]]) -> dict[str, list[tuple[str, float]]]:
+        result = {}
+        for e1, e2, prob in entity_pairs:
+            if e1 not in result:
+                result[e1] = [(e2, prob)]
+            else:
+                result[e1].append((e2, prob))
+                result[e1] = sorted(result[e1], key=lambda x: x[1], reverse=True)
+
+        return result
 
     @staticmethod
     def __entity_pairs_to_dict(entity_pairs):
@@ -207,9 +233,11 @@ class BertIntModule(Module):
         return bert_int_data, ent_emb_dict, entity_pairs_by_name
 
     def __ent_emb_to_dict(self, kg1, kg2, bert_int_data, ent_emb):
+        print("Length of entity embedding: ", len(ent_emb))
+        
         return {
             self.get_affiliation(kg1, kg2, bert_int_data.index2entity[idx]): {bert_int_data.index2entity[idx]: emb}
-            for idx, emb in enumerate(ent_emb) if bert_int_data.index2entity[idx] != '<PAD>'
+            for idx, emb in enumerate(ent_emb) if idx in bert_int_data.index2entity and bert_int_data.index2entity[idx] != '<PAD>'
         }
 
     def run_basic_unit(self, kg1, kg2, state):
