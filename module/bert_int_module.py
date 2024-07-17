@@ -209,7 +209,7 @@ class BertIntModule(Module):
     def __ent_emb_to_dict(self, kg1, kg2, bert_int_data, ent_emb):
         return {
             self.get_affiliation(kg1, kg2, bert_int_data.index2entity[idx]): {bert_int_data.index2entity[idx]: emb}
-            for idx, emb in enumerate(ent_emb)
+            for idx, emb in enumerate(ent_emb) if bert_int_data.index2entity[idx] != '<PAD>'
         }
 
     def run_basic_unit(self, kg1, kg2, state):
