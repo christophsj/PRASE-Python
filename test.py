@@ -126,28 +126,37 @@ def run_prase_iteration(kgs: KGs, embed_module: Module, save_dir_path:str, embed
     # save_meantime_result(save_dir_path, kgs, embed_module_name)
     
     # test once directly after applying embedding module
-    kgs.util.test(path=ground_truth_path, threshold=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+    kgs.util.test(path=ground_truth_path, threshold=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
     
     save_meantime_result(save_dir_path, kgs, embed_module_name)
     kgs.run(test_path=ground_truth_path)
     save_meantime_result(save_dir_path, kgs, embed_module_name)
 
-def get_embedding_module(save_dir_path: str, dataset_name: str):
+def get_embedding_module(save_dir_path: str, dataset_name: str, ground_truth_path: str):
     # embedding_module = PrecomputedEmbeddingModule(
     #     alignments_path=os.path.join(embed_output_path, "alignment_results_12"),
     #     embeddings_path=os.path.join(embed_output_path, "ent_embeds.npy"),
     #     mapping_l_path=os.path.join(embed_output_path, "kg1_ent_ids"),
     #     mapping_r_path=os.path.join(embed_output_path, "kg2_ent_ids")
     # )
+    
+    gold_result = set()
+    with open(ground_truth_path, "r", encoding="utf8") as f:
+        for line in f.readlines():
+            params = str.strip(line).split("\t")
+            ent_l, ent_r = params[0].strip(), params[1].strip()
+            gold_result.add((ent_l, ent_r))
+    
     embedding_module = BertIntModule(
         des_dict_path="model/bert_int/data/dbp15k/2016-10-des_dict",
         # description_name_1="http://purl.org/dc/elements/1.1/description",
         # description_name_2="http://schema.org/description",
-        # model_path="../Save_model/DBP15K_frenmodel_epoch_2.p",
+        model_path="../Save_model/DBP15K_frenmodel_epoch_2.p",
         interaction_model=True,
-        training_max_percentage=0.3,
+        training_max_percentage=0.2,
         debug_file_output_dir=save_dir_path + os.path.join("/bert_int", dataset_name),
-        dataset_name=dataset_name
+        dataset_name=dataset_name,
+        gold_result=gold_result
     )
     # embedding_module = DummyModule()
 
@@ -191,7 +200,7 @@ def main():
         os.makedirs(save_dir_path)
         
     # embed_module_name = "MultiKE"
-    module = get_embedding_module(save_dir_path, dataset_name)
+    module = get_embedding_module(save_dir_path, dataset_name, ground_truth_mapping_path)
     embed_module_name = module.__class__.__name__
         
     run_prase_iteration(kgs, module, save_dir_path, embed_module_name, prase_func=fusion_func,

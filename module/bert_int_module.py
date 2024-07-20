@@ -31,7 +31,7 @@ class BertIntModule(Module):
 
     def __init__(self, dataset_name, des_dict_path: str | None = None, description_name_1: str = None, description_name_2: str = None,
                  training_threshold: float = 0.8, training_max_percentage: float = 0.5, result_align_threshold = float("-inf"), 
-                 model_path=None, interaction_model=True, debug_file_output_dir = None):
+                 model_path=None, interaction_model=True, debug_file_output_dir = None, gold_result = None):
         self.des_dict_path = des_dict_path
         self.training_threshhold = training_threshold
         self.training_max_percentage = training_max_percentage
@@ -42,6 +42,7 @@ class BertIntModule(Module):
         self.result_align_threshold = result_align_threshold
         self.debug_file_output_dir = debug_file_output_dir
         self.dataset_name = dataset_name
+        self.gold_result = gold_result
         
         if debug_file_output_dir is not None:
             os.makedirs(debug_file_output_dir, exist_ok=True)
@@ -74,7 +75,7 @@ class BertIntModule(Module):
     def __load_model_from_path(bert_model_path: str):
         Model = Basic_Bert_Unit_model(768, BASIC_BERT_UNIT_MODEL_OUTPUT_DIM)
         Model.load_state_dict(torch.load(bert_model_path, map_location='cpu'))
-        print("loading basic bert unit model from:  {}".format(bert_model_path))
+        logger.info("loading basic bert unit model from:  {}".format(bert_model_path))
         Model.eval()
         for name, v in Model.named_parameters():
             v.requires_grad = False
@@ -97,6 +98,37 @@ class BertIntModule(Module):
                                             x[2]),
                                 entity_pairs))
         return entity_pairs
+    
+    # def __show_training_stats(self, train_set, gold_standard_set):
+    #     correct_num = len(train_set & gold_standard_set)
+    #     total_num = len(train_set)
+    #     recall = correct_num / len(gold_standard_set)
+    #     precision = correct_num / total_num
+    #     f1 = 2 * recall * precision / (recall + precision)
+    #     logger.info(f"Training data stats: Correct: {correct_num}, Total: {total_num}, Recall: {recall}, Precision: {precision}, F1: {f1}")
+    
+    def __show_training_stats(self, train_set, gold_standard_set):
+        def set_to_dict(s):
+            return { x[0]: x[1] for x in s}
+        
+        train_dict = set_to_dict(train_set)
+        gold_dict = set_to_dict(gold_standard_set)
+        
+        correct_num = 0
+        wrong_num = 0
+        unknown = 0
+        for k, v in train_dict.items():
+            if k in gold_dict:
+                if v == gold_dict[k]:
+                    correct_num += 1
+                else:
+                    wrong_num += 1
+            else:
+                unknown += 1
+                    
+        total = correct_num + wrong_num
+        precision = correct_num / total
+        logger.info(f"Training data stats: Correct: {correct_num}, Wrong: {wrong_num}, Total: {total}, Precision: {precision}, Unknown: {unknown}")
 
     def step(self, kg1: KG, kg2: KG, state: AlignmentState) -> AlignmentState:
         if self.interaction_model:
@@ -105,7 +137,9 @@ class BertIntModule(Module):
             bert_int_data, _, _, entity_pairs, ent_emb_dict, _, _ = self.run_basic_unit(kg1, kg2, state)
             entity_pairs = self.__convert_basic_unit_to_final(bert_int_data, entity_pairs)
 
+        logger.info(f"New entity pairs: {len(entity_pairs)}")
         new_pairs = self.__merge_entity_pairs(state.entity_alignments, entity_pairs)
+        logger.info(f"Merged entity pairs: {len(new_pairs)}")
         return AlignmentState(entity_embeddings=ent_emb_dict, entity_alignments=new_pairs)
 
     def __merge_entity_pairs(self, entity_pairs: list[tuple[str, str, float]],
@@ -233,7 +267,7 @@ class BertIntModule(Module):
         return bert_int_data, ent_emb_dict, entity_pairs_by_name
 
     def __ent_emb_to_dict(self, kg1, kg2, bert_int_data, ent_emb):
-        print("Length of entity embedding: ", len(ent_emb))
+        logger.info(f"Length of entity embedding: {len(ent_emb)}")
         
         return {
             self.get_affiliation(kg1, kg2, bert_int_data.index2entity[idx]): {bert_int_data.index2entity[idx]: emb}
@@ -340,7 +374,30 @@ class BertIntModule(Module):
             with open(f"{self.debug_file_output_dir}/train_ill.csv", "w") as f:
                 for e1, e2 in train_ill:
                     f.write(f"{index2entity[e1]}\t{index2entity[e2]}\n")
-        
+                    
+        if self.gold_result is not None:
+            self.__show_training_stats(set(map(lambda x: (index2entity[x[0]], index2entity[x[1]]), train_ill)), set(self.gold_result))
+        else:
+            logger.warning("No gold result provided, skipping training stats")
+            
+        # with open(f"data/dbp15k/fr_en/converted/ref_pairs", "r") as f:
+        #     test_ill = []
+        #     import csv
+        #     reader = csv.reader(f, delimiter="\t")
+        #     for row in reader:
+        #         e1, e2 = row
+        #         e1, e2 = entity2index[e1], entity2index[e2]
+        #         test_ill.append((e1, e2))
+                    
+        # with open(f"data/dbp15k/fr_en/converted/sup_pairs", "r") as f:
+        #     train_ill = []
+        #     import csv
+        #     reader = csv.reader(f, delimiter="\t")
+        #     for row in reader:
+        #         e1, e2 = row
+        #         e1, e2 = entity2index[e1], entity2index[e2]
+        #         train_ill.append((e1, e2))
+                
         ent_ill = []
         ent_ill.extend(train_ill)
         ent_ill.extend(test_ill)

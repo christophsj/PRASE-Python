@@ -169,4 +169,6 @@ def train(Model, Optimizer, Criterion, Train_gene, f_emb_list, test_candidate, t
             print("test using time {:.3f}".format(time.time() - start_time))
 
     e1_to_e2_dict_train = test(Model, train_candidate, train_ill, entpair2f_idx, feature_emb, 2048, cuda_num, test_topk)
+    print("Tests on entire data")
+    test(Model,{ **train_candidate, **test_candidate}, train_ill + test_ill, entpair2f_idx, feature_emb, 2048, cuda_num, test_topk)
     return {**e1_to_e2_dict, **e1_to_e2_dict_train}

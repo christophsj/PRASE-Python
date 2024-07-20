@@ -358,7 +358,7 @@ class KGsUtil:
                 else:
                     f1_score = 2.0 * precision * recall / (precision + recall)
                     print("Threshold: " + format(threshold_item, ".3f") + "\tPrecision: " + format(precision, ".6f") +
-                          "\tRecall: " + format(recall, ".6f") + "\tF1-Score: " + format(f1_score, ".6f"))
+                          "\tRecall: " + format(recall, ".6f") + "\tF1-Score: " + format(f1_score, ".6f") + "\tCorrect:" + str( correct_num) + "\tPredict:" + str(predict_num) + "\tTotal:" + str(total_num))
 
     def write_input_for_embed_align(self, link_path, save_dir="output", threshold=0.1):
         ent_align_predict, ent_align_test = self.generate_input_for_embed_align(link_path, threshold)

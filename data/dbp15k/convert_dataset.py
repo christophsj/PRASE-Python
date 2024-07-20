@@ -28,6 +28,8 @@ def main():
     rel_triples_2 = replace_entity_id(rel_triples_2, index2rel, index2entity)
 
     ent_ill = replace_entity_id_in_pair(ent_ill, index2entity)
+    train_ill = replace_entity_id_in_pair(train_ill, index2entity)
+    test_ill = replace_entity_id_in_pair(test_ill, index2entity)
 
     output_path = f"{input_path}converted/"
 
@@ -44,6 +46,14 @@ def main():
 
     with open(output_path + "ent_links", "w") as f:
         for h, t in ent_ill:
+            f.write(f"{h}\t{t}\n")
+            
+    with open(output_path + "sup_pairs", "w") as f:
+        for h, t in train_ill:
+            f.write(f"{h}\t{t}\n")
+            
+    with open(output_path + "ref_pairs", "w") as f:
+        for h, t in test_ill:
             f.write(f"{h}\t{t}\n")
             
     with open(output_path + "ent_ids_1", "w") as f:
