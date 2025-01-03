@@ -338,7 +338,9 @@ class BertIntModule(Module):
 
         train_ill = []
         test_ill = []
-        max_train_length = len(state.entity_alignments) * self.training_max_percentage
+        max_train_length = (
+            len(kg_l.entity_set | kg_r.entity_set) / 2
+        ) * self.training_max_percentage
 
         for e1, e2, prob in sorted(
             state.entity_alignments, key=lambda x: x[2], reverse=True
